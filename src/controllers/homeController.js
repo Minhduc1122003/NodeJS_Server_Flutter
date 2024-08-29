@@ -56,14 +56,14 @@ const findByViewID = async (req, res) => {
       .input('username', sql.VarChar, username)
       .input('password', sql.VarChar, password)
       .query("SELECT * FROM Users WHERE username = @username AND password = @password");
-      
+
     // Kiểm tra xem có tài khoản nào không
     if (result.recordset.length > 0) {
       res.status(200).json({ message: "Login successful", user: result.recordset[0] });
       console.log("data:", result.recordset[0]);
     } else {
       res.status(401).json({ message: "Invalid username or password" });
-            console.log("khong tim thay du lieu");
+      console.log("khong tim thay du lieu");
 
     }
   } catch (error) {
@@ -103,7 +103,7 @@ const sendEmail = async (req, res) => {
       pass: process.env.MY_PASSEMAIL, // Thay đổi thành mật khẩu email của bạn
     },
   });
-  const  code = generateCode();
+  const code = generateCode();
   // Cấu hình email
   let mailOptions = {
     from: process.env.MY_EMAIL, // Địa chỉ email của bạn
@@ -181,7 +181,7 @@ const sendEmail = async (req, res) => {
       </html>
     `, // Nội dung email với định dạng HTML
   };
-  
+
 
   try {
     await transporter.sendMail(mailOptions);
@@ -230,7 +230,7 @@ const createAccount = async (req, res) => {
         VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, 0)
       `);
 
-    console.log('User created successfully:', result); 
+    console.log('User created successfully:', result);
 
     // Kiểm tra kết quả của truy vấn INSERT
     if (result.rowsAffected[0] > 0) {
@@ -254,9 +254,9 @@ const createAccount = async (req, res) => {
 // hàm sinh code random
 function generateCode(length = 8) {
   return crypto.randomBytes(length)
-               .toString('hex')
-               .slice(0, length)
-               .toUpperCase(); // Đổi thành chữ hoa nếu cần
+    .toString('hex')
+    .slice(0, length)
+    .toUpperCase(); // Đổi thành chữ hoa nếu cần
 }
 
 
@@ -323,6 +323,87 @@ GROUP BY
 };
 
 
+// Hàm xử lý cho route GET /movies
+const findByViewMovieID = async (req, res) => {
+  console.log("findByViewMovieID");
+
+  // Kiểm tra xem req.body có định nghĩa không
+  if (!req.body || !req.body.movieId) {
+    return res.status(400).json({ message: "MovieID is missing" });
+  }
+
+  const movieId = parseInt(req.body.movieId, 10);
+  console.log("Đã nhận MovieID từ Flutter!");
+  console.log(`MovieID: ${movieId}`);
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối database");
+
+    // Thực hiện truy vấn để tìm thông tin phim dựa trên MovieID
+    let result = await pool.request()
+      .input('movieId', sql.Int, movieId)
+      .query(`
+        SELECT 
+          m.MovieID,
+          m.Title,
+          m.Description,
+          m.Duration,
+          m.ReleaseDate,
+          m.PosterUrl,
+          m.TrailerUrl,
+          l.LanguageName,
+          STRING_AGG(g.GenreName, ', ') AS Genres, -- Kết hợp các thể loại thành một chuỗi
+          c.CinemaName,
+          c.Address AS CinemaAddress,
+          STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Kết hợp các đánh giá thành một chuỗi
+          AVG(r.Rating) AS AverageRating, -- Tính điểm đánh giá trung bình
+          COUNT(r.IdRate) AS ReviewCount -- Đếm số lượng đánh giá
+        FROM 
+          Movies m
+        LEFT JOIN 
+          Language l ON m.IdLanguage = l.IdLanguage
+        LEFT JOIN 
+          MovieGenre mg ON m.MovieID = mg.MovieID
+        LEFT JOIN 
+          Genre g ON mg.IdGenre = g.IdGenre
+        LEFT JOIN 
+          Cinemas c ON m.CinemaID = c.CinemaID
+        LEFT JOIN 
+          Rate r ON m.MovieID = r.MovieID
+        LEFT JOIN 
+          Users u ON r.UserId = u.UserId
+        WHERE 
+          m.MovieID = @movieId
+        GROUP BY 
+          m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
+          m.PosterUrl, m.TrailerUrl, l.LanguageName, c.CinemaName, 
+          c.Address;
+      `);
+
+    // Kiểm tra xem có dữ liệu phim nào không
+    if (result.recordset.length > 0) {
+      res.status(200).json({ message: "Movie found", movie: result.recordset[0] });
+      console.log("Movie data:", result.recordset[0]);
+    } else {
+      res.status(404).json({ message: "Movie not found" });
+      console.log("Không tìm thấy phim");
+    }
+  } catch (error) {
+    console.error("Error fetching movie:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close(); // Đóng pool
+    }
+  }
+};
+
+
+
+
 
 
 
@@ -347,10 +428,10 @@ const getConversations = async (req, res) => {
   try {
     pool = await sql.connect(connection);
 
-  // Truy vấn dữ liệu từ bảng Conversations và lấy thông tin tin nhắn mới nhất và hình ảnh của người còn lại
-const result = await pool.request()
-.input('UserId', sql.Int, userId)
-.query(`
+    // Truy vấn dữ liệu từ bảng Conversations và lấy thông tin tin nhắn mới nhất và hình ảnh của người còn lại
+    const result = await pool.request()
+      .input('UserId', sql.Int, userId)
+      .query(`
   SELECT 
     c.Id, 
     c.User1Id, 
@@ -403,5 +484,6 @@ module.exports = {
   sendEmail, // Xuất hàm sendEmail
   createAccount,
   getConversations,
-  getAllMovies
+  getAllMovies,
+  findByViewMovieID
 };
