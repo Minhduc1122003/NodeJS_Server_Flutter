@@ -327,14 +327,15 @@ GROUP BY
 const findByViewMovieID = async (req, res) => {
   console.log("findByViewMovieID");
 
-  // Kiểm tra xem req.body có định nghĩa không
-  if (!req.body || !req.body.movieId) {
-    return res.status(400).json({ message: "MovieID is missing" });
-  }
+ // Kiểm tra xem req.body có định nghĩa không
+ if (!req.body) {
+  return res.status(400).json({ message: "Request body is missing" });
+}
 
   const movieId = parseInt(req.body.movieId, 10);
   console.log("Đã nhận MovieID từ Flutter!");
   console.log(`MovieID: ${movieId}`);
+  
   let pool;
   try {
     // Kết nối đến SQL Server
