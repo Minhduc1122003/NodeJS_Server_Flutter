@@ -270,7 +270,7 @@ const getAllMovies = async (req, res) => {
 
     // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
     let result = await pool.request().query(`
-      SELECT 
+     SELECT 
     m.MovieID,
     m.Title,
     m.Description,
@@ -278,7 +278,9 @@ const getAllMovies = async (req, res) => {
     m.ReleaseDate,
     m.PosterUrl,
     m.TrailerUrl,
+    m.Age, -- Thêm cột Age
     l.LanguageName,
+    l.Subtitle, -- Thêm cột Subtitle
     STRING_AGG(g.GenreName, ', ') AS Genres, -- Kết hợp các thể loại thành một chuỗi
     c.CinemaName,
     c.Address AS CinemaAddress,
@@ -301,7 +303,9 @@ LEFT JOIN
     Users u ON r.UserId = u.UserId
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, l.LanguageName, c.CinemaName, 
+    m.PosterUrl, m.TrailerUrl, m.Age, -- Thêm Age vào GROUP BY
+    l.LanguageName, l.Subtitle, -- Thêm Subtitle vào GROUP BY
+    c.CinemaName, 
     c.Address;
 
     `);
@@ -346,41 +350,46 @@ const findByViewMovieID = async (req, res) => {
     let result = await pool.request()
       .input('movieId', sql.Int, movieId)
       .query(`
-        SELECT 
-          m.MovieID,
-          m.Title,
-          m.Description,
-          m.Duration,
-          m.ReleaseDate,
-          m.PosterUrl,
-          m.TrailerUrl,
-          l.LanguageName,
-          STRING_AGG(g.GenreName, ', ') AS Genres, -- Kết hợp các thể loại thành một chuỗi
-          c.CinemaName,
-          c.Address AS CinemaAddress,
-          STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Kết hợp các đánh giá thành một chuỗi
-          AVG(r.Rating) AS AverageRating, -- Tính điểm đánh giá trung bình
-          COUNT(r.IdRate) AS ReviewCount -- Đếm số lượng đánh giá
-        FROM 
-          Movies m
-        LEFT JOIN 
-          Language l ON m.IdLanguage = l.IdLanguage
-        LEFT JOIN 
-          MovieGenre mg ON m.MovieID = mg.MovieID
-        LEFT JOIN 
-          Genre g ON mg.IdGenre = g.IdGenre
-        LEFT JOIN 
-          Cinemas c ON m.CinemaID = c.CinemaID
-        LEFT JOIN 
-          Rate r ON m.MovieID = r.MovieID
-        LEFT JOIN 
-          Users u ON r.UserId = u.UserId
-        WHERE 
-          m.MovieID = @movieId
-        GROUP BY 
-          m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-          m.PosterUrl, m.TrailerUrl, l.LanguageName, c.CinemaName, 
-          c.Address;
+      SELECT 
+    m.MovieID,
+    m.Title,
+    m.Description,
+    m.Duration,
+    m.ReleaseDate,
+    m.PosterUrl,
+    m.TrailerUrl,
+    m.Age, 
+    l.LanguageName,
+    l.Subtitle, -- Thêm cột Subtitle
+    STRING_AGG(g.GenreName, ', ') AS Genres, -- Kết hợp các thể loại thành một chuỗi
+    c.CinemaName,
+    c.Address AS CinemaAddress,
+    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Kết hợp các đánh giá thành một chuỗi
+    AVG(r.Rating) AS AverageRating, -- Tính điểm đánh giá trung bình
+    COUNT(r.IdRate) AS ReviewCount -- Đếm số lượng đánh giá
+FROM 
+    Movies m
+LEFT JOIN 
+    Language l ON m.IdLanguage = l.IdLanguage
+LEFT JOIN 
+    MovieGenre mg ON m.MovieID = mg.MovieID
+LEFT JOIN 
+    Genre g ON mg.IdGenre = g.IdGenre
+LEFT JOIN 
+    Cinemas c ON m.CinemaID = c.CinemaID
+LEFT JOIN 
+    Rate r ON m.MovieID = r.MovieID
+LEFT JOIN 
+    Users u ON r.UserId = u.UserId
+WHERE 
+    m.MovieID = @movieId
+GROUP BY 
+    m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
+    m.PosterUrl, m.TrailerUrl, m.Age, -- Thêm Age vào GROUP BY
+    l.LanguageName, l.Subtitle, -- Thêm Subtitle vào GROUP BY
+    c.CinemaName, 
+    c.Address;
+
       `);
 
     // Kiểm tra xem có dữ liệu phim nào không
