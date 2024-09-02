@@ -327,69 +327,76 @@ GROUP BY
 };
 
 
-// Hàm xử lý cho route GET /movies
 const findByViewMovieID = async (req, res) => {
   console.log("findByViewMovieID");
 
- // Kiểm tra xem req.body có định nghĩa không
- if (!req.body) {
-  return res.status(400).json({ message: "Request body is missing" });
-}
+  // Kiểm tra xem req.body có định nghĩa không
+  if (!req.body) {
+    return res.status(400).json({ message: "Request body is missing" });
+  }
 
   const movieId = parseInt(req.body.movieId, 10);
-  console.log("Đã nhận MovieID từ Flutter!");
-  console.log(`MovieID: ${movieId}`);
-  
+  const userId = parseInt(req.body.userId, 10);
+  console.log("Đã nhận MovieID và UserID từ Flutter!");
+  console.log(`MovieID: ${movieId}, UserID: ${userId}`);
+
   let pool;
   try {
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
     console.log("Đã kết nối database");
 
-    // Thực hiện truy vấn để tìm thông tin phim dựa trên MovieID
+    // Thực hiện truy vấn để tìm thông tin phim dựa trên MovieID và kiểm tra xem có trong Favourite không
     let result = await pool.request()
       .input('movieId', sql.Int, movieId)
+      .input('userId', sql.Int, userId)
       .query(`
       SELECT 
-    m.MovieID,
-    m.Title,
-    m.Description,
-    m.Duration,
-    m.ReleaseDate,
-    m.PosterUrl,
-    m.TrailerUrl,
-    m.Age, 
-    l.LanguageName,
-    l.Subtitle, -- Thêm cột Subtitle
-    STRING_AGG(g.GenreName, ', ') AS Genres, -- Kết hợp các thể loại thành một chuỗi
-    c.CinemaName,
-    c.Address AS CinemaAddress,
-    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Kết hợp các đánh giá thành một chuỗi
-    AVG(r.Rating) AS AverageRating, -- Tính điểm đánh giá trung bình
-    COUNT(r.IdRate) AS ReviewCount -- Đếm số lượng đánh giá
-FROM 
-    Movies m
-LEFT JOIN 
-    Language l ON m.IdLanguage = l.IdLanguage
-LEFT JOIN 
-    MovieGenre mg ON m.MovieID = mg.MovieID
-LEFT JOIN 
-    Genre g ON mg.IdGenre = g.IdGenre
-LEFT JOIN 
-    Cinemas c ON m.CinemaID = c.CinemaID
-LEFT JOIN 
-    Rate r ON m.MovieID = r.MovieID
-LEFT JOIN 
-    Users u ON r.UserId = u.UserId
-WHERE 
-    m.MovieID = @movieId
-GROUP BY 
-    m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.Age, -- Thêm Age vào GROUP BY
-    l.LanguageName, l.Subtitle, -- Thêm Subtitle vào GROUP BY
-    c.CinemaName, 
-    c.Address;
-
+        m.MovieID,
+        m.Title,
+        m.Description,
+        m.Duration,
+        m.ReleaseDate,
+        m.PosterUrl,
+        m.TrailerUrl,
+        m.Age, 
+        l.LanguageName,
+        l.Subtitle,
+        STRING_AGG(g.GenreName, ', ') AS Genres,
+        c.CinemaName,
+        c.Address AS CinemaAddress,
+        STRING_AGG(r.Content, ' | ') AS ReviewContents,
+        AVG(r.Rating) AS AverageRating,
+        COUNT(r.IdRate) AS ReviewCount,
+        CASE 
+          WHEN f.MovieID IS NOT NULL THEN CAST(1 AS BIT) 
+          ELSE CAST(0 AS BIT) 
+        END AS IsFavourite
+      FROM 
+        Movies m
+      LEFT JOIN 
+        Language l ON m.IdLanguage = l.IdLanguage
+      LEFT JOIN 
+        MovieGenre mg ON m.MovieID = mg.MovieID
+      LEFT JOIN 
+        Genre g ON mg.IdGenre = g.IdGenre
+      LEFT JOIN 
+        Cinemas c ON m.CinemaID = c.CinemaID
+      LEFT JOIN 
+        Rate r ON m.MovieID = r.MovieID
+      LEFT JOIN 
+        Users u ON r.UserId = u.UserId
+      LEFT JOIN 
+        Favourite f ON m.MovieID = f.MovieID AND f.UserId = @userId
+      WHERE 
+        m.MovieID = @movieId
+      GROUP BY 
+        m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
+        m.PosterUrl, m.TrailerUrl, m.Age, 
+        l.LanguageName, l.Subtitle,
+        c.CinemaName, 
+        c.Address, 
+        f.MovieID
       `);
 
     // Kiểm tra xem có dữ liệu phim nào không
@@ -410,6 +417,99 @@ GROUP BY
     }
   }
 };
+
+const addFavourire = async (req, res) => {
+  console.log("sendFavourire");
+
+  // Kiểm tra xem req.body có định nghĩa không
+  if (!req.body) {
+    return res.status(400).json({ message: "Request body is missing" });
+  }
+
+  const movieId = parseInt(req.body.movieId, 10);
+  const userId = parseInt(req.body.userId, 10);
+  console.log("Đã nhận MovieID và UserID từ Flutter!");
+  console.log(`MovieID: ${movieId}, UserID: ${userId}`);
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối database");
+
+    // Thực hiện truy vấn để chèn dữ liệu vào bảng Favourite
+    await pool.request()
+      .input('movieId', sql.Int, movieId)
+      .input('userId', sql.Int, userId)
+      .query(`
+        INSERT INTO Favourite (MovieID, UserId) 
+        VALUES (@movieId, @userId);
+      `);
+
+    // Trả về phản hồi thành công
+    res.status(200).json({ message: "Favourite added successfully" });
+    console.log("Favourite added successfully");
+
+  } catch (error) {
+    console.error("Error adding favourite:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close(); // Đóng pool
+    }
+  }
+};
+const removeFavourire = async (req, res) => {
+  console.log("removeFavourire");
+
+  // Kiểm tra xem req.body có định nghĩa không
+  if (!req.body) {
+    return res.status(400).json({ message: "Request body is missing" });
+  }
+
+  const movieId = parseInt(req.body.movieId, 10);
+  const userId = parseInt(req.body.userId, 10);
+  console.log("Đã nhận MovieID và UserID từ Flutter!");
+  console.log(`MovieID: ${movieId}, UserID: ${userId}`);
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối database");
+
+    // Thực hiện truy vấn để xóa dữ liệu từ bảng Favourite
+    const result = await pool.request()
+      .input('movieId', sql.Int, movieId)
+      .input('userId', sql.Int, userId)
+      .query(`
+        DELETE FROM Favourite
+        WHERE MovieID = @movieId AND UserId = @userId;
+      `);
+
+    // Kiểm tra số lượng hàng bị ảnh hưởng
+    if (result.rowsAffected[0] > 0) {
+      // Trả về phản hồi thành công nếu ít nhất 1 hàng bị xóa
+      res.status(200).json({ message: "Favourite removed successfully" });
+      console.log("Favourite removed successfully");
+    } else {
+      // Trả về phản hồi nếu không tìm thấy dữ liệu để xóa
+      res.status(404).json({ message: "Favourite not found" });
+      console.log("Favourite not found");
+    }
+
+  } catch (error) {
+    console.error("Error removing favourite:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close(); // Đóng pool
+    }
+  }
+};
+
 
 
 
@@ -495,5 +595,5 @@ module.exports = {
   createAccount,
   getConversations,
   getAllMovies,
-  findByViewMovieID
+  findByViewMovieID,addFavourire,removeFavourire,
 };
