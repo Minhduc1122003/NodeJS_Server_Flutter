@@ -1,5 +1,5 @@
 const express = require('express');
-const { getHomepage, findByViewID,sendEmail,createAccount,getConversations,getAllMovies, findByViewMovieID,addFavourire,removeFavourire } = require('../controllers/homeController');
+const { getHomepage, findByViewID,sendEmail,createAccount,getConversations,getAllMovies, findByViewMovieID,addFavourire,removeFavourire,getAllUserData } = require('../controllers/homeController');
 const route = express.Router();
 
 // khai báo route
@@ -12,7 +12,8 @@ route.get('/getAllMovies', getAllMovies); // get danh sách nhắn tin
 route.post('/findByViewMovieID', findByViewMovieID); // tìm kiếm bằng id phim
 route.post('/addFavourire', addFavourire); // thêm yêu thích
 route.post('/removeFavourire', removeFavourire); // thêm yêu thích
+route.post('/getAllUserData', getAllUserData); // thêm yêu thích
 
 
-  
+
 module.exports=route;

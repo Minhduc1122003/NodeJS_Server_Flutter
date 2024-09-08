@@ -251,6 +251,48 @@ const createAccount = async (req, res) => {
   }
 };
 
+// hàm get dữ liệu user (admin)
+const getAllUserData = async (req, res) => {
+  console.log("Flutter has requested to fetch user data!");
+
+  // Kiểm tra xem req.body có tồn tại không
+  if (!req.body || !req.body.username) {
+    return res.status(400).json({ message: "Request body or username is missing" });
+  }
+
+  const username = req.body.username;
+  console.log("Đã nhận dữ liệu truy vấn từ Flutter!");
+  console.log(`Username: ${username}`);
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối database");
+
+    // Thực hiện truy vấn để lấy tất cả người dùng trừ user có `username` đã cho
+    let result = await pool.request()
+      .input('username', sql.VarChar, username)
+      .query(`
+        SELECT * FROM Users WHERE UserName != @username
+      `);
+
+    console.log('Fetched users data:', result.recordset);
+
+    // Trả kết quả dưới dạng JSON
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close(); // Đóng pool
+    }
+  }
+};
+
+
 // hàm sinh code random
 function generateCode(length = 8) {
   return crypto.randomBytes(length)
@@ -609,5 +651,5 @@ module.exports = {
   createAccount,
   getConversations,
   getAllMovies,
-  findByViewMovieID,addFavourire,removeFavourire,
+  findByViewMovieID,addFavourire,removeFavourire,getAllUserData
 };
