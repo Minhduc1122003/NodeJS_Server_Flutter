@@ -34,13 +34,13 @@ const getHomepage = async (req, res) => {
 
 // Hàm xử lý cho route POST /findByViewID
 const findByViewID = async (req, res) => {
-  console.log("Flutter has connected!");
+  console.log("Flutter has connected to login!");
 
   // Kiểm tra xem req.body có định nghĩa không
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
-  }
-
+  } 
+ 
   const { username, password } = req.body || {};
   console.log("Đã nhận dữ liệu từ Flutter!");
   console.log(`Username: ${username}, Password: ${password}`);
@@ -303,7 +303,7 @@ function generateCode(length = 8) {
 
 
 // Hàm xử lý cho route GET /movies
-const getAllMovies = async (req, res) => {
+const getMoviesDangChieu = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
@@ -312,7 +312,7 @@ const getAllMovies = async (req, res) => {
 
     // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
     let result = await pool.request().query(`
-   SELECT 
+ SELECT 
     m.MovieID,
     m.Title,
     m.Description,
@@ -320,36 +320,103 @@ const getAllMovies = async (req, res) => {
     m.ReleaseDate,
     m.PosterUrl,
     m.TrailerUrl,
-    m.Age, -- Thêm cột Age
-    l.LanguageName,
-    l.Subtitle, -- Thêm cột Subtitle
-    -- Sử dụng subquery để xử lý việc kết hợp thể loại
-    (SELECT STRING_AGG(g.GenreName, ', ') 
-     FROM MovieGenre mg 
-     JOIN Genre g ON mg.IdGenre = g.IdGenre 
-     WHERE mg.MovieID = m.MovieID
-    ) AS Genres,
+    m.SubTitle, -- Bao gồm trường SubTitle
+    m.Voiceover, -- Bao gồm trường Voiceover
+    a.Value AS Age, -- Giá trị độ tuổi từ bảng Age
+    STRING_AGG(g.GenreName, ', ') AS Genres, -- Thể loại phim kết hợp từ bảng Genre
     c.CinemaName,
     c.Address AS CinemaAddress,
-    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Kết hợp các đánh giá thành một chuỗi
-    ROUND(AVG(r.Rating), 2) AS AverageRating,  -- Round to 2 decimal places
-    COUNT(r.IdRate) AS ReviewCount -- Đếm số lượng đánh giá
+    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Đánh giá phim kết hợp thành chuỗi
+    ROUND(AVG(r.Rating), 2) AS AverageRating, -- Đánh giá trung bình
+    COUNT(r.IdRate) AS ReviewCount -- Số lượng đánh giá
 FROM 
     Movies m
 LEFT JOIN 
-    Language l ON m.IdLanguage = l.IdLanguage
+    Age a ON m.AgeID = a.AgeID -- Thay đổi join với bảng Age
 LEFT JOIN 
     Cinemas c ON m.CinemaID = c.CinemaID
 LEFT JOIN 
-    Rate r ON m.MovieID = r.MovieID
+    MovieGenre mg ON m.MovieID = mg.MovieID
 LEFT JOIN 
-    Users u ON r.UserId = u.UserId
+    Genre g ON mg.IdGenre = g.IdGenre
+LEFT JOIN  
+    Rate r ON m.MovieID = r.MovieID
+WHERE 
+    m.StatusMovie = N'Đang chiếu' -- Thêm điều kiện lọc theo trạng thái phim
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.Age, -- Thêm Age vào GROUP BY
-    l.LanguageName, l.Subtitle, -- Thêm Subtitle vào GROUP BY
+    m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, -- Bao gồm các trường SubTitle và Voiceover
+    a.Value, 
     c.CinemaName, 
     c.Address;
+
+
+    `);
+
+    // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(result.recordset, null, 2)); // Indent with 2 spaces for readability
+    console.log(result.recordset);
+
+    console.log("Clients have connected");
+  } catch (error) {
+    console.error("Error fetching movies:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  } finally {
+    // Đóng kết nối nếu pool đã được khởi tạo
+    if (pool) {
+      await pool.close(); // Đóng pool
+    }
+  }
+};
+// Hàm xử lý cho route GET /movies
+const getMoviesSapChieu = async (req, res) => {
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server");
+
+    // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
+    let result = await pool.request().query(`
+ SELECT 
+    m.MovieID,
+    m.Title,
+    m.Description,
+    m.Duration,
+    m.ReleaseDate,
+    m.PosterUrl,
+    m.TrailerUrl,
+    m.SubTitle, -- Bao gồm trường SubTitle
+    m.Voiceover, -- Bao gồm trường Voiceover
+    a.Value AS Age, -- Giá trị độ tuổi từ bảng Age
+    STRING_AGG(g.GenreName, ', ') AS Genres, -- Thể loại phim kết hợp từ bảng Genre
+    c.CinemaName,
+    c.Address AS CinemaAddress,
+    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Đánh giá phim kết hợp thành chuỗi
+    ROUND(AVG(r.Rating), 2) AS AverageRating, -- Đánh giá trung bình
+    COUNT(r.IdRate) AS ReviewCount -- Số lượng đánh giá
+FROM 
+    Movies m
+LEFT JOIN 
+    Age a ON m.AgeID = a.AgeID -- Thay đổi join với bảng Age
+LEFT JOIN 
+    Cinemas c ON m.CinemaID = c.CinemaID
+LEFT JOIN 
+    MovieGenre mg ON m.MovieID = mg.MovieID
+LEFT JOIN 
+    Genre g ON mg.IdGenre = g.IdGenre
+LEFT JOIN  
+    Rate r ON m.MovieID = r.MovieID
+WHERE 
+    m.StatusMovie = N'Sắp chiếu' -- Thêm điều kiện lọc theo trạng thái phim
+GROUP BY 
+    m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
+    m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, -- Bao gồm các trường SubTitle và Voiceover
+    a.Value, 
+    c.CinemaName, 
+    c.Address;
+
 
     `);
 
@@ -403,19 +470,20 @@ const findByViewMovieID = async (req, res) => {
     m.ReleaseDate,
     m.PosterUrl,
     m.TrailerUrl,
-    m.Age, 
-    l.LanguageName,
-    l.Subtitle,
--- Sử dụng subquery để xử lý việc kết hợp thể loại
+    a.Value AS Age, -- Thay thế LanguageName bằng Age
+    m.SubTitle, -- Bao gồm trường SubTitle
+    m.Voiceover, -- Bao gồm trường Voiceover
+    -- Sử dụng subquery để xử lý việc kết hợp thể loại
     (SELECT STRING_AGG(g.GenreName, ', ') 
      FROM MovieGenre mg 
      JOIN Genre g ON mg.IdGenre = g.IdGenre 
      WHERE mg.MovieID = m.MovieID
-    ) AS Genres,    c.CinemaName,
+    ) AS Genres,
+    c.CinemaName,
     c.Address AS CinemaAddress,
-    STRING_AGG(r.Content, ' | ') AS ReviewContents,
-    ROUND(AVG(r.Rating), 2) AS AverageRating,  -- Round to 2 decimal places
-    COUNT(r.IdRate) AS ReviewCount,
+    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Kết hợp các đánh giá thành chuỗi
+    ROUND(AVG(r.Rating), 2) AS AverageRating, -- Đánh giá trung bình
+    COUNT(r.IdRate) AS ReviewCount, -- Số lượng đánh giá
     -- Đếm số lượng đánh giá trong từng khoảng giá trị
     SUM(CASE WHEN r.Rating BETWEEN 9 AND 10 THEN 1 ELSE 0 END) AS Rating_9_10,
     SUM(CASE WHEN r.Rating BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS Rating_7_8,
@@ -429,8 +497,6 @@ const findByViewMovieID = async (req, res) => {
 FROM 
     Movies m
 LEFT JOIN 
-    Language l ON m.IdLanguage = l.IdLanguage
-LEFT JOIN 
     MovieGenre mg ON m.MovieID = mg.MovieID
 LEFT JOIN 
     Genre g ON mg.IdGenre = g.IdGenre
@@ -442,15 +508,18 @@ LEFT JOIN
     Users u ON r.UserId = u.UserId
 LEFT JOIN 
     Favourite f ON m.MovieID = f.MovieID AND f.UserId = @userId
+LEFT JOIN 
+    Age a ON m.AgeID = a.AgeID -- Thay đổi join với bảng Age
 WHERE 
     m.MovieID = @movieId
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.Age, 
-    l.LanguageName, l.Subtitle,
+    m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, -- Bao gồm SubTitle và Voiceover
+    a.Value, -- Bao gồm Age
     c.CinemaName, 
     c.Address, 
-    f.MovieID
+    f.MovieID;
+
 
 
       `);
@@ -650,6 +719,7 @@ module.exports = {
   sendEmail, // Xuất hàm sendEmail
   createAccount,
   getConversations,
-  getAllMovies,
+
+  getMoviesDangChieu,getMoviesSapChieu,
   findByViewMovieID,addFavourire,removeFavourire,getAllUserData
 };
