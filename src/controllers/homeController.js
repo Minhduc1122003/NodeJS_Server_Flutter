@@ -228,7 +228,7 @@ const createAccount = async (req, res) => {
       `);
 
     console.log('User creation result:', result);
-
+ 
     if (result.rowsAffected[0] > 0) {
       res.status(200).json({ message: "Account created successfully" });
       console.log("Account created:", { username, email });
