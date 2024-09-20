@@ -217,11 +217,11 @@ const createAccount = async (req, res) => {
       .input('email', sql.VarChar(155), email)
       .input('fullname', sql.NVarChar(155), fullname)
       .input('phoneNumber', sql.Int, phoneNumber)
-      .input('photo', sql.VarChar(50), photo)
+      .input('photo', null)
       .input('createDate', sql.DateTime, currentDate)
       .input('updateDate', sql.DateTime, currentDate)
-      .input('updateBy', sql.VarChar(50), username) // Assuming the creator is the initial updater
-      .input('status', sql.NVarChar(20), 'Active') // Default status
+      .input('updateBy', 0) // Assuming the creator is the initial updater
+      .input('status', 'Đang hoạt động') // Default status
       .query(`
         INSERT INTO Users (UserName, Password, Email, FullName, PhoneNumber, Photo, Role, CreateDate, UpdateDate, UpdateBy, Status, IsDelete)
         VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, 0, @createDate, @updateDate, @updateBy, @status, 0)
@@ -307,7 +307,7 @@ const getMoviesDangChieu = async (req, res) => {
 
     // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
     let result = await pool.request().query(`
- SELECT 
+SELECT 
     m.MovieID,
     m.Title,
     m.Description,
@@ -318,7 +318,12 @@ const getMoviesDangChieu = async (req, res) => {
     m.SubTitle, -- Bao gồm trường SubTitle
     m.Voiceover, -- Bao gồm trường Voiceover
     a.Value AS Age, -- Giá trị độ tuổi từ bảng Age
-    STRING_AGG(g.GenreName, ', ') AS Genres, -- Thể loại phim kết hợp từ bảng Genre
+    ( -- Truy vấn con để lấy thể loại phim
+        SELECT STRING_AGG(g.GenreName, ', ') 
+        FROM MovieGenre mg
+        JOIN Genre g ON mg.IdGenre = g.IdGenre
+        WHERE mg.MovieID = m.MovieID
+    ) AS Genres, 
     c.CinemaName,
     c.Address AS CinemaAddress,
     STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Đánh giá phim kết hợp thành chuỗi
@@ -327,24 +332,19 @@ const getMoviesDangChieu = async (req, res) => {
 FROM 
     Movies m
 LEFT JOIN 
-    Age a ON m.AgeID = a.AgeID -- Thay đổi join với bảng Age
+    Age a ON m.AgeID = a.AgeID
 LEFT JOIN 
     Cinemas c ON m.CinemaID = c.CinemaID
-LEFT JOIN 
-    MovieGenre mg ON m.MovieID = mg.MovieID
-LEFT JOIN 
-    Genre g ON mg.IdGenre = g.IdGenre
 LEFT JOIN  
     Rate r ON m.MovieID = r.MovieID
 WHERE 
     m.StatusMovie = N'Đang chiếu' -- Thêm điều kiện lọc theo trạng thái phim
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, -- Bao gồm các trường SubTitle và Voiceover
+    m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, 
     a.Value, 
     c.CinemaName, 
     c.Address;
-
 
     `);
 
@@ -356,7 +356,7 @@ GROUP BY
     console.log("Clients have connected");
   } catch (error) {
     console.error("Error fetching movies:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res.status(500).json({ message: "Internal Server Error", error: error.message }); 
   } finally {
     // Đóng kết nối nếu pool đã được khởi tạo
     if (pool) {
