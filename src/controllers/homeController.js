@@ -197,42 +197,38 @@ const sendEmail = async (req, res) => {
 const createAccount = async (req, res) => {
   console.log("Flutter has requested to create an account!");
 
-  // Kiểm tra xem req.body có tồn tại không
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
   }
 
   const { email, password, username, fullname, phoneNumber, photo } = req.body;
-  console.log("Đã nhận dữ liệu tạo tài khoản từ Flutter!");
-  console.log(`email: ${email}`);
-  console.log(`password: ${password}`);
-  console.log(`username: ${username}`);
-  console.log(`fullname: ${fullname}`);
-  console.log(`phoneNumber: ${phoneNumber}`);
-  console.log(`photo: ${photo}`);
+  console.log("Received account creation data from Flutter:", { email, username, fullname, phoneNumber });
 
   let pool;
   try {
-    // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-    console.log("Đã kết nối database");
+    console.log("Connected to database");
 
-    // Thực hiện truy vấn để tạo tài khoản
+    const currentDate = new Date().toISOString();
+
     let result = await pool.request()
-      .input('username', sql.VarChar, username)
-      .input('password', sql.VarChar, password)
-      .input('email', sql.VarChar, email)
-      .input('fullname', sql.NVarChar, fullname)
+      .input('username', sql.VarChar(50), username)
+      .input('password', sql.VarChar(55), password)
+      .input('email', sql.VarChar(155), email)
+      .input('fullname', sql.NVarChar(155), fullname)
       .input('phoneNumber', sql.Int, phoneNumber)
-      .input('photo', sql.VarChar, photo)
+      .input('photo', sql.VarChar(50), photo)
+      .input('createDate', sql.DateTime, currentDate)
+      .input('updateDate', sql.DateTime, currentDate)
+      .input('updateBy', sql.VarChar(50), username) // Assuming the creator is the initial updater
+      .input('status', sql.NVarChar(20), 'Active') // Default status
       .query(`
-        INSERT INTO Users (UserName, Password, Email, FullName, PhoneNumber, Photo, Role)
-        VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, 0)
+        INSERT INTO Users (UserName, Password, Email, FullName, PhoneNumber, Photo, Role, CreateDate, UpdateDate, UpdateBy, Status, IsDelete)
+        VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, 0, @createDate, @updateDate, @updateBy, @status, 0)
       `);
 
-    console.log('User created successfully:', result);
+    console.log('User creation result:', result);
 
-    // Kiểm tra kết quả của truy vấn INSERT
     if (result.rowsAffected[0] > 0) {
       res.status(200).json({ message: "Account created successfully" });
       console.log("Account created:", { username, email });
@@ -244,9 +240,8 @@ const createAccount = async (req, res) => {
     console.error("Error creating account:", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   } finally {
-    // Đóng kết nối
     if (pool) {
-      await pool.close(); // Đóng pool
+      await pool.close();
     }
   }
 };
