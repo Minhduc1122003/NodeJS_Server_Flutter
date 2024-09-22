@@ -630,11 +630,62 @@ const removeFavourire = async (req, res) => {
   }
 };
 
+// Hàm xử lý cho route GET /movies
 
+const getShowtime = async (req, res) => {
+  let pool;
+  try {
+    const movieId = parseInt(req.body.movieId, 10);
+    const date = req.body.date; // Định dạng YYYY-MM-DD
+    const time = req.body.time; // Định dạng HH:MM
 
+    console.log("Đã nhận MovieID, Date và Time từ Flutter!");
+    console.log("Date:", date);
+    console.log("Time:", time);
 
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Showtime");
 
+    const result = await pool.request()
+      .input('InputDate', date)
+      .input('InputTime', time) 
+      .input('MovieID', movieId)
+      .query(`
+        SELECT 
+    M.Title AS MovieTitle,
+    M.Duration AS MovieDuration,
+    S.CinemaRoomID,
+    S.ShowtimeDate,
+    S.StartTime,
+    DATEADD(MINUTE, M.Duration, CAST(CONVERT(datetime, S.ShowtimeDate) + CAST(S.StartTime AS datetime) AS datetime)) AS EndTime
+FROM 
+    Showtime S
+JOIN 
+    Movies M ON S.MovieID = M.MovieID
+WHERE 
+    S.ShowtimeDate = @InputDate
+    AND S.StartTime >= @InputTime
+    AND M.MovieID = @MovieID
+ORDER BY 
+    S.StartTime;
 
+      `);
+
+    // Gửi dữ liệu theo định dạng JSON
+    res.setHeader('Content-Type', 'application/json');
+    res.json(result.recordset);
+    console.log("Kết quả truy vấn:", result.recordset);
+
+  } catch (error) {
+    console.error("Lỗi khi truy vấn lịch chiếu:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
 
 
 
@@ -716,5 +767,6 @@ module.exports = {
   getConversations,
 
   getMoviesDangChieu,getMoviesSapChieu,
-  findByViewMovieID,addFavourire,removeFavourire,getAllUserData
+  findByViewMovieID,addFavourire,removeFavourire,getAllUserData,
+  getShowtime
 };
