@@ -580,6 +580,7 @@ const addFavourire = async (req, res) => {
     }
   }
 };
+
 const removeFavourire = async (req, res) => {
   console.log("removeFavourire");
 
@@ -653,6 +654,7 @@ const getShowtime = async (req, res) => {
       .input('MovieID', movieId)
       .query(`
         SELECT 
+    S.ShowtimeID AS ShowTimeID,
     M.Title AS MovieTitle,
     M.Duration AS MovieDuration,
     S.CinemaRoomID,
@@ -669,7 +671,6 @@ WHERE
     AND M.MovieID = @MovieID
 ORDER BY 
     S.StartTime;
-
       `);
 
     // Gửi dữ liệu theo định dạng JSON
@@ -683,6 +684,64 @@ ORDER BY
   } finally {
     if (pool) {
       await pool.close();
+    }
+  }
+};
+
+
+const getChair = async (req, res) => {
+  console.log("getChair from server");
+
+  // Kiểm tra xem req.body có định nghĩa không
+  if (!req.body) {
+    return res.status(400).json({ message: "Request body is missing" });
+  }
+
+  const showTimeID = parseInt(req.body.showTimeID);
+  const cinemaRoomID = parseInt(req.body.cinemaRoomID); // Nhận CinemaRoomID
+  console.log("Đã nhận showTimeID và CinemaRoomID từ Flutter!");
+  console.log(`showTimeID: ${showTimeID}, cinemaRoomID: ${cinemaRoomID}`);
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối database");
+
+    // Thực hiện truy vấn để lấy danh sách ghế
+    const result = await pool.request()
+      .input('showTimeID', sql.Int, showTimeID)
+      .input('cinemaRoomID', sql.Int, cinemaRoomID) // Thêm CinemaRoomID vào truy vấn
+      .query(`
+        SELECT 
+           s.SeatID,
+		  s.CinemaRoomID,
+          s.ChairCode,
+		  s.DefectiveChair,
+    CAST(COALESCE(sr.Status, 0) AS BIT) AS ReservationStatus
+        FROM 
+          Seats s
+        LEFT JOIN 
+          SeatReservation sr ON s.SeatID = sr.SeatID AND sr.ShowtimeID = @showTimeID
+        WHERE 
+          s.CinemaRoomID = @cinemaRoomID -- Lọc theo CinemaRoomID
+        ORDER BY 
+          s.SeatID;
+      `);
+
+    // Trả về phản hồi thành công với danh sách ghế
+    res.status(200).json(result.recordset);
+    console.log(result); 
+    console.log("(:)====||===================================>");
+    console.log("Danh sách ghế đã được trả về thành công");
+
+  } catch (error) {
+    console.error("Error fetching chairs:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close(); // Đóng pool
     }
   }
 };
@@ -766,7 +825,13 @@ module.exports = {
   createAccount,
   getConversations,
 
-  getMoviesDangChieu,getMoviesSapChieu,
-  findByViewMovieID,addFavourire,removeFavourire,getAllUserData,
-  getShowtime
+  getMoviesDangChieu,
+  getMoviesSapChieu,
+  findByViewMovieID,
+  addFavourire,
+  removeFavourire,
+  getAllUserData,
+  getShowtime,
+  getChair,
+
 };
