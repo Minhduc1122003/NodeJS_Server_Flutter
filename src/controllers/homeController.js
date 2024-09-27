@@ -315,10 +315,10 @@ SELECT
     m.ReleaseDate,
     m.PosterUrl,
     m.TrailerUrl,
-    m.SubTitle, -- Bao gồm trường SubTitle
-    m.Voiceover, -- Bao gồm trường Voiceover
-    a.Value AS Age, -- Giá trị độ tuổi từ bảng Age
-    ( -- Truy vấn con để lấy thể loại phim
+    m.Age,  -- Chọn thêm trường Age
+    m.SubTitle, 
+    m.Voiceover,
+    ( 
         SELECT STRING_AGG(g.GenreName, ', ') 
         FROM MovieGenre mg
         JOIN Genre g ON mg.IdGenre = g.IdGenre
@@ -326,25 +326,22 @@ SELECT
     ) AS Genres, 
     c.CinemaName,
     c.Address AS CinemaAddress,
-    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Đánh giá phim kết hợp thành chuỗi
-    ROUND(AVG(r.Rating), 2) AS AverageRating, -- Đánh giá trung bình
-    COUNT(r.IdRate) AS ReviewCount -- Số lượng đánh giá
+    STRING_AGG(r.Content, ' | ') AS ReviewContents, 
+    ROUND(AVG(r.Rating), 2) AS AverageRating, 
+    COUNT(r.IdRate) AS ReviewCount 
 FROM 
     Movies m
-LEFT JOIN 
-    Age a ON m.AgeID = a.AgeID
 LEFT JOIN 
     Cinemas c ON m.CinemaID = c.CinemaID
 LEFT JOIN  
     Rate r ON m.MovieID = r.MovieID
 WHERE 
-    m.StatusMovie = N'Đang chiếu' -- Thêm điều kiện lọc theo trạng thái phim
+    m.StatusMovie = N'Đang chiếu' 
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, 
-    a.Value, 
-    c.CinemaName, 
-    c.Address;
+    m.PosterUrl, m.TrailerUrl, m.Age,  -- Thêm Age vào GROUP BY
+    m.SubTitle, m.Voiceover, 
+    c.CinemaName, c.Address, m.CinemaID;  -- Đã thêm CinemaID trước đó
 
     `);
 
@@ -382,35 +379,33 @@ const getMoviesSapChieu = async (req, res) => {
     m.ReleaseDate,
     m.PosterUrl,
     m.TrailerUrl,
-    m.SubTitle, -- Bao gồm trường SubTitle
-    m.Voiceover, -- Bao gồm trường Voiceover
-    a.Value AS Age, -- Giá trị độ tuổi từ bảng Age
-    STRING_AGG(g.GenreName, ', ') AS Genres, -- Thể loại phim kết hợp từ bảng Genre
+    m.Age,  -- Chọn thêm trường Age
+    m.SubTitle, 
+    m.Voiceover,
+    ( 
+        SELECT STRING_AGG(g.GenreName, ', ') 
+        FROM MovieGenre mg
+        JOIN Genre g ON mg.IdGenre = g.IdGenre
+        WHERE mg.MovieID = m.MovieID
+    ) AS Genres, 
     c.CinemaName,
     c.Address AS CinemaAddress,
-    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Đánh giá phim kết hợp thành chuỗi
-    ROUND(AVG(r.Rating), 2) AS AverageRating, -- Đánh giá trung bình
-    COUNT(r.IdRate) AS ReviewCount -- Số lượng đánh giá
+    STRING_AGG(r.Content, ' | ') AS ReviewContents, 
+    ROUND(AVG(r.Rating), 2) AS AverageRating, 
+    COUNT(r.IdRate) AS ReviewCount 
 FROM 
     Movies m
 LEFT JOIN 
-    Age a ON m.AgeID = a.AgeID -- Thay đổi join với bảng Age
-LEFT JOIN 
     Cinemas c ON m.CinemaID = c.CinemaID
-LEFT JOIN 
-    MovieGenre mg ON m.MovieID = mg.MovieID
-LEFT JOIN 
-    Genre g ON mg.IdGenre = g.IdGenre
 LEFT JOIN  
     Rate r ON m.MovieID = r.MovieID
 WHERE 
-    m.StatusMovie = N'Sắp chiếu' -- Thêm điều kiện lọc theo trạng thái phim
+    m.StatusMovie = N'Sắp chiếu' 
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, -- Bao gồm các trường SubTitle và Voiceover
-    a.Value, 
-    c.CinemaName, 
-    c.Address;
+    m.PosterUrl, m.TrailerUrl, m.Age,  -- Thêm Age vào GROUP BY
+    m.SubTitle, m.Voiceover, 
+    c.CinemaName, c.Address, m.CinemaID;  -- Đã thêm CinemaID trước đó
 
 
     `);
@@ -465,10 +460,10 @@ SELECT
     m.ReleaseDate,
     m.PosterUrl,
     m.TrailerUrl,
-    a.Value AS Age, -- Thay thế LanguageName bằng Age
-    m.SubTitle, -- Bao gồm trường SubTitle
-    m.Voiceover, -- Bao gồm trường Voiceover
-    m.Price, -- Include Price
+    m.Age, -- Truy cập trực tiếp trường Age từ bảng Movies
+    m.SubTitle, -- Bao gồm SubTitle
+    m.Voiceover, -- Bao gồm Voiceover
+    m.Price, -- Bao gồm Price
     -- Sử dụng subquery để xử lý việc kết hợp thể loại
     (SELECT STRING_AGG(g.GenreName, ', ') 
      FROM MovieGenre mg 
@@ -504,19 +499,16 @@ LEFT JOIN
     Users u ON r.UserId = u.UserId
 LEFT JOIN 
     Favourite f ON m.MovieID = f.MovieID AND f.UserId = @userId
-LEFT JOIN 
-    Age a ON m.AgeID = a.AgeID -- Thay đổi join với bảng Age
 WHERE 
     m.MovieID = @movieId
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, -- Bao gồm SubTitle và Voiceover
-    m.Price, -- Include Price in GROUP BY
-    a.Value, -- Bao gồm Age
+    m.PosterUrl, m.TrailerUrl, m.Age, -- Bao gồm Age trực tiếp từ Movies
+    m.SubTitle, m.Voiceover, -- Bao gồm SubTitle và Voiceover
+    m.Price, -- Bao gồm Price
     c.CinemaName, 
     c.Address, 
     f.MovieID;
-
 
 
       `);
