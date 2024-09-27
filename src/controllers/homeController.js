@@ -457,7 +457,7 @@ const findByViewMovieID = async (req, res) => {
       .input('movieId', sql.Int, movieId)
       .input('userId', sql.Int, userId)
       .query(`
- SELECT 
+SELECT 
     m.MovieID,
     m.Title,
     m.Description,
@@ -468,6 +468,7 @@ const findByViewMovieID = async (req, res) => {
     a.Value AS Age, -- Thay thế LanguageName bằng Age
     m.SubTitle, -- Bao gồm trường SubTitle
     m.Voiceover, -- Bao gồm trường Voiceover
+    m.Price, -- Include Price
     -- Sử dụng subquery để xử lý việc kết hợp thể loại
     (SELECT STRING_AGG(g.GenreName, ', ') 
      FROM MovieGenre mg 
@@ -510,6 +511,7 @@ WHERE
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
     m.PosterUrl, m.TrailerUrl, m.SubTitle, m.Voiceover, -- Bao gồm SubTitle và Voiceover
+    m.Price, -- Include Price in GROUP BY
     a.Value, -- Bao gồm Age
     c.CinemaName, 
     c.Address, 
