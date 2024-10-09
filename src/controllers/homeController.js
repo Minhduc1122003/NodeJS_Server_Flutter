@@ -361,6 +361,7 @@ GROUP BY
     }
   }
 };
+
 // Hàm xử lý cho route GET /movies
 const getMoviesSapChieu = async (req, res) => {
   let pool;
@@ -511,6 +512,7 @@ GROUP BY
     f.MovieID;
 
 
+
       `);
 
     // Kiểm tra xem có dữ liệu phim nào không
@@ -652,7 +654,7 @@ const getShowtime = async (req, res) => {
     M.Title AS MovieTitle,
     M.Duration AS MovieDuration,
     S.CinemaRoomID,
-    S.ShowtimeDate,
+    S.ShowtimeDate, 
     S.StartTime,
     DATEADD(MINUTE, M.Duration, CAST(CONVERT(datetime, S.ShowtimeDate) + CAST(S.StartTime AS datetime) AS datetime)) AS EndTime
 FROM 
@@ -741,6 +743,58 @@ const getChair = async (req, res) => {
 };
 
 
+const insertBuyTicket = async (req, res) => {
+  let pool;
+  try {
+    // Get values from the request body
+    const buyTicketId = parseInt(req.body.buyTicketId, 10); // INT
+    const userId = parseInt(req.body.userId, 10); // INT
+    const movieId = parseInt(req.body.movieId, 10); // INT
+    const quantity = parseInt(req.body.quantity, 10); // INT
+    const totalPrice = parseFloat(req.body.totalPrice); // FLOAT
+    const showtimeId = parseInt(req.body.showtimeId, 10); // INT
+    const seatIDs = req.body.seatIDs; // Giả sử seatIDs là mảng
+    const seatIDsString = Array.isArray(seatIDs) ? seatIDs.join(',') : seatIDs; // Chuyển thành chuỗi
+    
+    console.log("buyTicketId:", buyTicketId);
+    console.log("UserId:", userId);
+    console.log("MovieId:", movieId);
+    console.log("Quantity:", quantity);
+    console.log("TotalPrice:", totalPrice);
+    console.log("ShowtimeId:", showtimeId);
+    console.log("SeatIDs:", seatIDs);
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Showtime");
+
+    // Prepare and execute the stored procedure with dynamic values
+    const result = await pool.request()
+    .input('BuyTicketId', buyTicketId)
+    .input('UserId', userId)
+    .input('MovieID', movieId)
+      .input('Quantity', quantity)
+      .input('TotalPrice', totalPrice)
+      .input('ShowtimeID', showtimeId)
+      .input('SeatIDs', sql.NVarChar(sql.MAX), seatIDsString) // Sử dụng seatIDsString
+      .query(`EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID, @Quantity, @TotalPrice, @ShowtimeID, @SeatIDs;`);
+
+    // Gửi dữ liệu theo định dạng JSON
+    res.setHeader('Content-Type', 'application/json');
+    res.json(result.recordset);
+    console.log("Kết quả truy vấn:", result.recordset);
+
+  } catch (error) {
+    console.error("Lỗi khi truy vấn lịch chiếu:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
 
 
 
@@ -818,7 +872,6 @@ module.exports = {
   sendEmail, // Xuất hàm sendEmail
   createAccount,
   getConversations,
-
   getMoviesDangChieu,
   getMoviesSapChieu,
   findByViewMovieID,
@@ -827,5 +880,5 @@ module.exports = {
   getAllUserData,
   getShowtime,
   getChair,
-
+  insertBuyTicket,
 };

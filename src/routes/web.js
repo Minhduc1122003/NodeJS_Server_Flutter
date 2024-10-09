@@ -11,7 +11,8 @@ const { getHomepage,
     removeFavourire,
     getAllUserData,
     getShowtime,
-    getChair
+    getChair,
+    insertBuyTicket,
  } = require('../controllers/homeController');
 const route = express.Router();
 
@@ -31,6 +32,7 @@ route.post('/removeFavourire', removeFavourire); // thêm yêu thích
 route.post('/getAllUserData', getAllUserData); // thêm yêu thích
 route.post('/getShowtime', getShowtime); // thêm yêu thích
 route.post('/getChair', getChair); // lấy list ghế
+route.post('/insertBuyTicket', insertBuyTicket); // lấy list ghế
 
 
 
