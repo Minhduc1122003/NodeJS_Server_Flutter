@@ -13,6 +13,7 @@ const { getHomepage,
     getShowtime,
     getChair,
     insertBuyTicket,
+    getShowtimeListForAdmin,
  } = require('../controllers/homeController');
 const route = express.Router();
 
@@ -20,6 +21,7 @@ const route = express.Router();
 route.get('/', getHomepage);
 route.get('/getMoviesDangChieu', getMoviesDangChieu); // get danh sách nhắn tin
 route.get('/getMoviesSapChieu', getMoviesSapChieu); // get danh sách nhắn tin
+route.get('/getShowtimeListForAdmin', getShowtimeListForAdmin); // get danh sách nhắn tin
 
 // ------- mdethod post ----------------
 route.post('/findByViewID', findByViewID); // Thêm route cho findByViewID

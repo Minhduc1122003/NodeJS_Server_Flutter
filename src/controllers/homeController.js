@@ -80,21 +80,16 @@ const findByViewID = async (req, res) => {
 // Hàm gửi email
 const sendEmail = async (req, res) => {
   console.log("Sending email!");
-
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
   }
-
   const { title, content, recipient } = req.body || {};
   console.log(`Title: ${title}, Content: ${content}, Recipient: ${recipient}`);
   console.log(`0===D==================>`);
-
   console.log(`Data from flutter:`);
-
   console.log(`Title:${title}`);
   console.log(`Content:${content}`);
   console.log(`Recipient:${recipient}`);
-
   // Cấu hình transporter
   let transporter = nodemailer.createTransport({
     service: 'gmail', // Thay đổi theo nhà cung cấp email bạn sử dụng
@@ -562,7 +557,6 @@ const addFavourire = async (req, res) => {
         VALUES (@movieId, @userId);
       `);
 
-    // Trả về phản hồi thành công
     res.status(200).json({ message: "Favourite added successfully" });
     console.log("Favourite added successfully");
 
@@ -570,9 +564,8 @@ const addFavourire = async (req, res) => {
     console.error("Error adding favourite:", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   } finally {
-    // Đóng kết nối
     if (pool) {
-      await pool.close(); // Đóng pool
+      await pool.close();
     }
   }
 };
@@ -795,7 +788,46 @@ const insertBuyTicket = async (req, res) => {
 };
 
 
+const getShowtimeListForAdmin = async (req, res) => {
+  let pool;
+  try {
 
+    console.log("Đã nhận getShowtimeListForAdmin Flutter!");
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table getShowtimeListForAdmin");
+    const result = await pool.request()
+      .query(`
+       SELECT 
+    M.Title AS MovieName,
+    S.ShowtimeDate,
+    S.StartTime,
+    M.Duration AS MovieDuration,
+    CR.CinemaRoomID AS RoomNumber,
+    C.CinemaName
+FROM 
+    Showtime S
+    INNER JOIN Movies M ON S.MovieID = M.MovieID
+    INNER JOIN CinemaRoom CR ON S.CinemaRoomID = CR.CinemaRoomID
+    INNER JOIN Cinemas C ON CR.CinemaID = C.CinemaID
+ORDER BY 
+    S.ShowtimeDate, S.StartTime
+      `);
+
+    // Gửi dữ liệu theo định dạng JSON
+    res.setHeader('Content-Type', 'application/json');
+    res.json(result.recordset);
+    console.log("Kết quả truy vấn getShowtimeListForAdmin:", result.recordset);
+  } catch (error) {
+    console.error("Lỗi khi truy vấn lịch chiếu:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
 
 
 
@@ -881,4 +913,5 @@ module.exports = {
   getShowtime,
   getChair,
   insertBuyTicket,
+  getShowtimeListForAdmin,
 };
