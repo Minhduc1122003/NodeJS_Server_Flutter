@@ -829,8 +829,19 @@ ORDER BY
   }
 };
 
-
-
+const uploadImage = async (req, res) => { 
+  console.log('đã nhận ảnh tử user');
+  
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).send('No file uploaded.');
+    }
+    res.status(200).send('File uploaded successfully.');
+  } catch (error) {
+    res.status(500).send('Error uploading file.');
+  }
+};
 
 
 
@@ -914,4 +925,5 @@ module.exports = {
   getChair,
   insertBuyTicket,
   getShowtimeListForAdmin,
+  uploadImage,
 };

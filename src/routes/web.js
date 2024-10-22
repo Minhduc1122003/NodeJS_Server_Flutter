@@ -1,4 +1,17 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+  // Cấu hình multer để lưu trữ file
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads/'); // Thư mục lưu trữ file
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + path.extname(file.originalname)); // Đặt tên file theo thời gian hiện tại
+    }
+  });
+  const upload = multer({ storage: storage });
+
 const { getHomepage, 
     findByViewID,
     sendEmail,
@@ -14,6 +27,7 @@ const { getHomepage,
     getChair,
     insertBuyTicket,
     getShowtimeListForAdmin,
+    uploadImage,
  } = require('../controllers/homeController');
 const route = express.Router();
 
@@ -35,6 +49,7 @@ route.post('/getAllUserData', getAllUserData); // thêm yêu thích
 route.post('/getShowtime', getShowtime); // thêm yêu thích
 route.post('/getChair', getChair); // lấy list ghế
 route.post('/insertBuyTicket', insertBuyTicket); // lấy list ghế
+route.post('/uploadImage', upload.single('image'), uploadImage);
 
 
 
