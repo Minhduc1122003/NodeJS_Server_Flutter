@@ -990,7 +990,251 @@ const getUserListForAdmin = async (req, res) => {
   }
 };
 
+const createShifts = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận createShifts Flutter!");
 
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { ShiftName, StartTime, EndTime, IsCrossDay, Status } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!ShiftName || !StartTime || !EndTime || IsCrossDay === undefined || !Status) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Định dạng lại StartTime và EndTime
+    const startTimeFormatted = _formatTime(StartTime);
+    const endTimeFormatted = _formatTime(EndTime);
+
+    // In ra để kiểm tra định dạng thời gian
+    console.log("Thời gian bắt đầu (formatted):", startTimeFormatted);
+    console.log("Thời gian kết thúc (formatted):", endTimeFormatted);
+
+    // Kiểm tra định dạng thời gian
+    if (!isValidTimeFormat(startTimeFormatted) || !isValidTimeFormat(endTimeFormatted)) {
+      return res.status(400).json({ message: "Invalid time format for StartTime or EndTime" });
+    }
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Shifts");
+
+    const result = await pool.request()
+      .input('ShiftName', ShiftName)
+      .input('StartTime', startTimeFormatted)
+      .input('EndTime', endTimeFormatted)
+      .input('IsCrossDay', IsCrossDay)
+      .input('Status', Status) 
+      .query(`
+        INSERT INTO Shifts (ShiftName, StartTime, EndTime, IsCrossDay, Status)
+        VALUES (@ShiftName, @StartTime, @EndTime, @IsCrossDay, @Status)
+      `);
+
+    res.status(201).json({ message: "Shift created successfully", shiftId: result.rowsAffected[0] });
+    console.log("Ca làm đã được tạo thành công:", result);
+  } catch (error) {
+    console.error("Lỗi khi tạo ca làm:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const _formatTime = (time) => {
+  // Nếu thời gian có định dạng 'HH:mm', thêm ':00' vào cuối
+  if (time && time.length === 5) {
+    return `${time}:00`; // Chuyển thành 'HH:mm:ss'
+  }
+  return time; // Trả về thời gian không thay đổi nếu không khớp
+}; 
+
+const isValidTimeFormat = (time) => {
+  // Kiểm tra xem thời gian có định dạng hợp lệ 'HH:mm:ss'
+  const regex = /^(2[0-3]|[01]?[0-9]):([0-5]?[0-9]):([0-5]?[0-9])$/;
+  return regex.test(time);
+};
+
+const createLocation = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận createLocation từ Flutter!");
+
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { LocationName, Latitude, Longitude, Radius, ShiftId } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!LocationName || !Latitude || !Longitude || Radius === undefined || !ShiftId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // In ra để kiểm tra dữ liệu
+    console.log("Dữ liệu vị trí:", { LocationName, Latitude, Longitude, Radius, ShiftId });
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Locations");
+
+    const result = await pool.request()
+      .input('LocationName', LocationName)
+      .input('Latitude', parseFloat(Latitude)) // Convert to float
+      .input('Longitude', parseFloat(Longitude)) // Convert to float
+      .input('Radius', Radius)
+      .input('ShiftId', ShiftId)
+      .query(`
+        INSERT INTO Locations (LocationName, Latitude, Longitude, Radius, ShiftId)
+        VALUES (@LocationName, @Latitude, @Longitude, @Radius, @ShiftId)
+      `);
+
+    res.status(201).json({ message: "Location created successfully", locationId: result.rowsAffected[0] });
+    console.log("Vị trí đã được tạo thành công:", result);
+  } catch (error) {
+    console.error("Lỗi khi tạo vị trí:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const createWorkSchedules = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận createWorkSchedules từ Flutter!");
+
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    const { UserId, ShiftId, StartDate, EndDate, DaysOfWeek } = req.body;
+
+    if (!UserId || !ShiftId || !StartDate || !EndDate || !DaysOfWeek) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Chuyển đổi định dạng ngày từ dd/MM/yyyy sang yyyy-MM-dd
+    const parseDate = (dateStr) => {
+      const [day, month, year] = dateStr.split('/');
+      return `${year}-${month}-${day}`;
+    };
+
+    const formattedStartDate = parseDate(StartDate);
+    const formattedEndDate = parseDate(EndDate);
+ // Loại bỏ dấu [] ở DaysOfWeek
+ const formattedDaysOfWeek = DaysOfWeek.replace(/[\[\]]/g, '');
+
+ console.log("Dữ liệu lịch làm việc:", { UserId, ShiftId, StartDate: formattedStartDate, EndDate: formattedEndDate, DaysOfWeek: formattedDaysOfWeek });
+
+ pool = await sql.connect(connection);
+ console.log("Connecting to SQL Server Table WorkSchedules");
+
+ const result = await pool.request()
+   .input('UserId', sql.Int, UserId)
+   .input('ShiftId', sql.Int, ShiftId)
+   .input('StartDate', sql.Date, formattedStartDate)
+   .input('EndDate', sql.Date, formattedEndDate)
+   .input('DaysOfWeek', sql.NVarChar(70), formattedDaysOfWeek)
+      .query(`
+        INSERT INTO WorkSchedules (UserId, ShiftId, StartDate, EndDate, DaysOfWeek)
+        VALUES (@UserId, @ShiftId, @StartDate, @EndDate, @DaysOfWeek)
+      `);
+
+    res.status(201).json({ message: "Work schedule created successfully", scheduleId: result.rowsAffected[0] });
+    console.log("Lịch làm việc đã được tạo thành công:", result);
+  } catch (error) {
+    console.error("Lỗi khi tạo lịch làm việc:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
+const getAllListShift = async (req, res) => {
+  let pool;
+  try {
+
+    console.log("Đã nhận getAllListShift Flutter!");
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table getUserListForAdmin");
+    const result = await pool.request()
+      .query(`
+      SELECT * FROM Shifts 
+      `);
+
+    // Gửi dữ liệu theo định dạng JSON
+    res.setHeader('Content-Type', 'application/json');
+    res.json(result.recordset);
+    console.log("Kết quả truy vấn getUserListForAdmin:", result.recordset);
+  } catch (error) {
+    console.error("Lỗi khi truy vấn lịch chiếu:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const getAllListLocation = async (req, res) => {
+  let pool;
+  try {
+
+    console.log("Đã nhận getAllListLocation Flutter!");
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table getUserListForAdmin");
+    const result = await pool.request()
+      .query(`
+
+SELECT 
+    l.LocationId,
+    l.LocationName,
+    l.Latitude,
+    l.Longitude,
+    l.Radius,
+    l.ShiftId,
+    s.ShiftName,
+    s.StartTime,
+    s.EndTime,
+    s.IsCrossDay,
+    s.CreateDate,
+    s.Status
+FROM 
+    Locations l
+JOIN 
+    Shifts s ON l.ShiftId = s.ShiftId;
+      `);
+
+    // Gửi dữ liệu theo định dạng JSON
+    res.setHeader('Content-Type', 'application/json');
+    res.json(result.recordset);
+    console.log("Kết quả truy vấn getUserListForAdmin:", result.recordset);
+  } catch (error) {
+    console.error("Lỗi khi truy vấn lịch chiếu:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
 module.exports = {
   getHomepage,
   findByViewID,
@@ -1010,4 +1254,9 @@ module.exports = {
   uploadImage,
   createFilm,
   getUserListForAdmin,
+  createShifts,
+  getAllListShift,
+  getAllListLocation,
+  createLocation,
+  createWorkSchedules,
 };

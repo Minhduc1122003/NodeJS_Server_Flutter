@@ -9,7 +9,7 @@ const path = require('path');
     filename: function (req, file, cb) {
       cb(null, Date.now() + path.extname(file.originalname)); // Đặt tên file theo thời gian hiện tại
     }
-  });
+  }); 
   const upload = multer({ storage: storage });
 
 const { getHomepage, 
@@ -30,6 +30,12 @@ const { getHomepage,
     getShowtimeListForAdmin,
     uploadImage,
     createFilm,
+    createShifts,
+    getAllListShift,
+  getAllListLocation,
+  createLocation,
+  createWorkSchedules,
+
  } = require('../controllers/homeController');
 const route = express.Router();
 
@@ -39,6 +45,8 @@ route.get('/getMoviesDangChieu', getMoviesDangChieu); // get danh sách nhắn t
 route.get('/getMoviesSapChieu', getMoviesSapChieu); // get danh sách nhắn tin
 route.get('/getShowtimeListForAdmin', getShowtimeListForAdmin); // get danh sách nhắn tin
 route.get('/getUserListForAdmin', getUserListForAdmin); //  get danh sách user
+route.get('/getAllListShift', getAllListShift); //  get danh sách user
+route.get('/getAllListLocation', getAllListLocation); //  get danh sách user
 
 // ------- mdethod post ----------------
 route.post('/findByViewID', findByViewID); // Thêm route cho findByViewID
@@ -54,6 +62,9 @@ route.post('/getChair', getChair); // lấy list ghế
 route.post('/insertBuyTicket', insertBuyTicket); // lấy list ghế
 route.post('/uploadImage', upload.single('image'), uploadImage);
 route.post('/createFilm', createFilm); // Thêm film
+route.post('/createShifts', createShifts); // Thêm film
+route.post('/createLocation', createLocation); // Thêm film
+route.post('/createWorkSchedules', createWorkSchedules); // Thêm film
 
 
 
