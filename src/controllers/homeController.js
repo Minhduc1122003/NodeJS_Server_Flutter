@@ -1087,8 +1087,8 @@ const createLocation = async (req, res) => {
 
     const result = await pool.request()
       .input('LocationName', LocationName)
-      .input('Latitude', parseFloat(Latitude)) // Convert to float
-      .input('Longitude', parseFloat(Longitude)) // Convert to float
+      .input('Latitude',Latitude) // Convert to float
+      .input('Longitude', Longitude) // Convert to float
       .input('Radius', Radius)
       .input('ShiftId', ShiftId)
       .query(`
@@ -1235,6 +1235,105 @@ JOIN
     }
   }
 };
+
+const getAllWorkSchedulesByID = async (req, res) => {
+  let pool;
+
+  // Lấy các tham số từ body và chuyển đổi thành kiểu số nguyên
+  const userId = parseInt(req.body.userId, 10); // INT
+  const startDate = req.body.startDate; // Giữ nguyên kiểu chuỗi
+  const endDate = req.body.endDate; // Giữ nguyên kiểu chuỗi
+
+  try {
+    console.log("Đã nhận getAllWorkSchedulesByID Flutter!");
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table WorkSchedules");
+
+    console.log("UserId:", userId);
+    console.log("StartDate:", startDate);
+    console.log("EndDate:", endDate);
+
+    const result = await pool.request()
+      .input('userId', sql.Int, userId) // Sử dụng giá trị số nguyên cho userId
+      .input('startDate', sql.Date, startDate) // Sử dụng giá trị chuỗi cho startDate
+      .input('endDate', sql.Date, endDate) // Sử dụng giá trị chuỗi cho endDate
+      .query(`
+        SELECT *
+        FROM WorkSchedules
+        WHERE UserId = @userId
+          AND StartDate >= @startDate
+          AND EndDate <= @endDate;
+      `);
+
+    // Gửi dữ liệu theo định dạng JSON
+    res.setHeader('Content-Type', 'application/json');
+    res.json(result.recordset);
+    console.log("Kết quả truy vấn getAllWorkSchedulesByID:", result.recordset);
+
+  } catch (error) {
+    console.error("Lỗi khi truy vấn lịch làm việc:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const getShiftForAttendance = async (req, res) => {
+  let pool;
+
+  // Lấy các tham số từ body và chuyển đổi thành kiểu số nguyên
+  const userId = parseInt(req.body.userId, 10); // INT
+  const startDate = req.body.startDate; // Giữ nguyên kiểu chuỗi
+  const endDate = req.body.endDate; // Giữ nguyên kiểu chuỗi
+  const daysOfWeek = req.body.daysOfWeek; // Ký tự cần tìm trong DaysOfWeek
+
+  try {
+    console.log("Đã nhận getShiftForAttendance Flutter!");
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table WorkSchedules");
+
+    console.log("UserId:", userId);
+    console.log("StartDate:", startDate);
+    console.log("EndDate:", endDate);
+    console.log("DaysOfWeek:", daysOfWeek);
+
+    const result = await pool.request()
+      .input('userId', sql.Int, userId) // Sử dụng giá trị số nguyên cho userId
+      .input('startDate', sql.Date, startDate) // Sử dụng giá trị chuỗi cho startDate
+      .input('endDate', sql.Date, endDate) // Sử dụng giá trị chuỗi cho endDate
+      .input('daysOfWeek', sql.NVarChar, daysOfWeek) // Thêm input cho DaysOfWeek
+      .query(`
+        SELECT ws.*, s.ShiftName, s.StartTime, s.EndTime, l.LocationName, l.Latitude, l.Longitude, l.Radius
+        FROM WorkSchedules ws
+        JOIN Shifts s ON ws.ShiftId = s.ShiftId
+        LEFT JOIN Locations l ON s.ShiftId = l.ShiftId
+        WHERE ws.UserId = @userId
+          AND ws.StartDate >= @startDate
+          AND ws.EndDate <= @endDate
+          AND ws.DaysOfWeek LIKE '%' + @daysOfWeek + '%'; -- Điều kiện cho DaysOfWeek
+      `);
+
+    // Gửi dữ liệu theo định dạng JSON
+    res.setHeader('Content-Type', 'application/json');
+    res.json(result.recordset);
+    console.log("Kết quả truy vấn getShiftForAttendance:", result.recordset);
+
+  } catch (error) {
+    console.error("Lỗi khi truy vấn lịch làm việc:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
 module.exports = {
   getHomepage,
   findByViewID,
@@ -1259,4 +1358,6 @@ module.exports = {
   getAllListLocation,
   createLocation,
   createWorkSchedules,
+  getAllWorkSchedulesByID,
+  getShiftForAttendance,
 };

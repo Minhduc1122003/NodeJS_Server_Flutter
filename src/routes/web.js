@@ -35,6 +35,8 @@ const { getHomepage,
   getAllListLocation,
   createLocation,
   createWorkSchedules,
+  getAllWorkSchedulesByID,
+  getShiftForAttendance,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -65,7 +67,8 @@ route.post('/createFilm', createFilm); // Thêm film
 route.post('/createShifts', createShifts); // Thêm film
 route.post('/createLocation', createLocation); // Thêm film
 route.post('/createWorkSchedules', createWorkSchedules); // Thêm film
-
+route.post('/getAllWorkSchedulesByID', getAllWorkSchedulesByID); // Thêm film
+route.post('/getShiftForAttendance', getShiftForAttendance); // Thêm film
 
 
 module.exports=route;
