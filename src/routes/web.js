@@ -37,6 +37,8 @@ const { getHomepage,
   createWorkSchedules,
   getAllWorkSchedulesByID,
   getShiftForAttendance,
+  getAllIsCombo,
+  getAllIsNotCombo,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -49,6 +51,9 @@ route.get('/getShowtimeListForAdmin', getShowtimeListForAdmin); // get danh sác
 route.get('/getUserListForAdmin', getUserListForAdmin); //  get danh sách user
 route.get('/getAllListShift', getAllListShift); //  get danh sách user
 route.get('/getAllListLocation', getAllListLocation); //  get danh sách user
+route.get('/getAllIsCombo', getAllIsCombo); //  get danh sách iscombo
+route.get('/getAllIsNotCombo', getAllIsNotCombo); //  get danh sách isnotcombo
+
 
 // ------- mdethod post ----------------
 route.post('/findByViewID', findByViewID); // Thêm route cho findByViewID

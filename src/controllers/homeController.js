@@ -1334,6 +1334,106 @@ const getShiftForAttendance = async (req, res) => {
   }
 };
 
+
+const getAllIsCombo = async (req, res) => {
+  console.log("Request received to fetch combo data!");
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connected to database successfully");
+
+    // Thực hiện truy vấn để lấy tất cả combo
+    let result = await pool.request()
+      .query(`       
+ SELECT 
+          ComboID,
+          Title,
+          Subtitle,
+          Image,
+          Quantity,
+          Status,
+          IsCombo,
+          Price
+        FROM ComBo
+		WHERE IsCombo = 1
+       
+      `);
+
+    console.log('Fetched combo data:', result.recordset);
+
+    res.status(200).json({
+      success: true,
+      data: result.recordset,
+      message: "Combo data fetched successfully"
+    });
+
+  } catch (error) {
+    console.error("Error fetching combo data:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Internal Server Error", 
+      error: error.message 
+    });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close();
+      console.log("Database connection closed");
+    }
+  }
+};
+
+const getAllIsNotCombo = async (req, res) => {
+  console.log("Request received to fetch combo data!");
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connected to database successfully");
+
+    // Thực hiện truy vấn để lấy tất cả combo
+    let result = await pool.request()
+      .query(`       
+ SELECT 
+          ComboID,
+          Title,
+          Subtitle,
+          Image,
+          Quantity,
+          Status,
+          IsCombo,
+          Price
+        FROM ComBo
+		WHERE IsCombo = 0     
+      `);
+
+    console.log('Fetched combo data:', result.recordset);
+
+    res.status(200).json({
+      success: true,
+      data: result.recordset,
+      message: "Combo data fetched successfully"
+    });
+
+  } catch (error) {
+    console.error("Error fetching combo data:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Internal Server Error", 
+      error: error.message 
+    });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close();
+      console.log("Database connection closed");
+    }
+  }
+};
+
 module.exports = {
   getHomepage,
   findByViewID,
@@ -1360,4 +1460,6 @@ module.exports = {
   createWorkSchedules,
   getAllWorkSchedulesByID,
   getShiftForAttendance,
+  getAllIsCombo,
+  getAllIsNotCombo,
 };
