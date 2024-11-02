@@ -1078,10 +1078,11 @@ const createLocation = async (req, res) => {
     if (!LocationName || !Latitude || !Longitude || Radius === undefined || !ShiftId) {
       return res.status(400).json({ message: "Missing required fields" });
     }
-
+ 
     // In ra để kiểm tra dữ liệu
+     
     console.log("Dữ liệu vị trí:", { LocationName, Latitude, Longitude, Radius, ShiftId });
-
+ 
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Locations");
 
