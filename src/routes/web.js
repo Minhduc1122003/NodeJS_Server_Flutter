@@ -39,6 +39,10 @@ const { getHomepage,
   getShiftForAttendance,
   getAllIsCombo,
   getAllIsNotCombo,
+  updateShifts,
+  removeShifts,
+  updateLocationShifts,
+  removeLocationShifts,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -74,6 +78,14 @@ route.post('/createLocation', createLocation); // Thêm film
 route.post('/createWorkSchedules', createWorkSchedules); // Thêm film
 route.post('/getAllWorkSchedulesByID', getAllWorkSchedulesByID); // Thêm film
 route.post('/getShiftForAttendance', getShiftForAttendance); // Thêm film
+route.post('/updateShifts', updateShifts); // update ca làm.
+route.post('/removeShifts', removeShifts); // xóa ca làm.
+route.post('/updateLocationShifts', updateLocationShifts); // update ví trí
+route.post('/removeLocationShifts', removeLocationShifts); // xóa vị trí
+
+
+
+
 
 
 module.exports=route;

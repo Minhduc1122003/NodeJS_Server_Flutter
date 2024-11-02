@@ -714,7 +714,7 @@ const getChair = async (req, res) => {
           SeatReservation sr ON s.SeatID = sr.SeatID AND sr.ShowtimeID = @showTimeID
         WHERE 
           s.CinemaRoomID = @cinemaRoomID -- Lọc theo CinemaRoomID
-        ORDER BY 
+        ORDER BY  
           s.SeatID;
       `);
 
@@ -1435,6 +1435,242 @@ const getAllIsNotCombo = async (req, res) => {
   }
 };
 
+
+
+const updateShifts = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận updateShifts Flutter!");
+
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { ShiftId ,ShiftName, StartTime, EndTime, IsCrossDay, Status } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!ShiftId || !ShiftName || !StartTime || !EndTime || IsCrossDay === undefined || !Status) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Định dạng lại StartTime và EndTime
+    const startTimeFormatted = _formatTime(StartTime);
+    const endTimeFormatted = _formatTime(EndTime);
+
+    // In ra để kiểm tra định dạng thời gian
+    console.log("Thời gian bắt đầu (formatted):", startTimeFormatted);
+    console.log("Thời gian kết thúc (formatted):", endTimeFormatted);
+
+    // Kiểm tra định dạng thời gian
+    if (!isValidTimeFormat(startTimeFormatted) || !isValidTimeFormat(endTimeFormatted)) {
+      return res.status(400).json({ message: "Invalid time format for StartTime or EndTime" });
+    }
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Shifts");
+
+    const result = await pool.request()
+    .input('ShiftId', ShiftId)
+    .input('ShiftName', ShiftName)
+    .input('StartTime', startTimeFormatted)
+    .input('EndTime', endTimeFormatted)
+    .input('IsCrossDay', IsCrossDay)
+    .input('Status', Status) 
+    .query(`
+        UPDATE Shifts 
+        SET ShiftName = @ShiftName,
+            StartTime = @StartTime,
+            EndTime = @EndTime,
+            IsCrossDay = @IsCrossDay,
+            Status = @Status
+        WHERE ShiftId = @ShiftId
+      `);
+
+    res.status(201).json({ message: "Shift update successfully", shiftId: result.rowsAffected[0] });
+    console.log("Ca làm đã được sửa thành công:", result);
+  } catch (error) {
+    console.error("Lỗi khi sửa ca làm:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const removeShifts = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận removeShifts Flutter!");
+
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { ShiftId } = req.body;
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Shifts");
+
+    // Kiểm tra ShiftId có tồn tại trong Locations không
+    const checkLocation = await pool.request()
+      .input('ShiftId', ShiftId)
+      .query(`
+        SELECT COUNT(*) as count 
+        FROM Locations 
+        WHERE ShiftId = @ShiftId
+      `);
+
+    if (checkLocation.recordset[0].count > 0) {
+      // Nếu tồn tại trong Locations, xóa từ Locations trước
+      await pool.request()
+        .input('ShiftId', ShiftId)
+        .query(`DELETE FROM Locations WHERE ShiftId = @ShiftId`);
+    }
+
+    // Sau đó xóa từ bảng Shifts
+    const deleteShift = await pool.request()
+      .input('ShiftId', ShiftId)
+      .query(`DELETE FROM Shifts WHERE ShiftId = @ShiftId`);
+
+    res.status(201).json({ 
+      message: "Shift deleted successfully", 
+      shiftId: deleteShift.rowsAffected[0] 
+    });
+    console.log("Ca làm đã được xóa thành công:", deleteShift);
+
+  } catch (error) {
+    console.error("Lỗi khi xóa ca làm:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
+const updateLocationShifts = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận updateLocationShifts từ Flutter!");
+
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { LocationId ,LocationName, Latitude, Longitude, Radius, ShiftId } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!LocationId || !LocationName || !Latitude || !Longitude || Radius === undefined || !ShiftId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+ 
+    // In ra để kiểm tra dữ liệu
+     
+    console.log("Dữ liệu vị trí:", {LocationId, LocationName, Latitude, Longitude, Radius, ShiftId });
+ 
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Locations");
+
+    const result = await pool.request()
+      .input('LocationId', LocationId)
+      .input('LocationName', LocationName)
+      .input('Latitude',Latitude) // Convert to float
+      .input('Longitude', Longitude) // Convert to float
+      .input('Radius', Radius)
+      .input('ShiftId', ShiftId)
+      .query(`
+        UPDATE Locations 
+        SET LocationName = @LocationName,
+            Latitude = @Latitude,
+            Longitude = @Longitude,
+            Radius = @Radius,
+            ShiftId = @ShiftId
+        WHERE LocationId = @LocationId
+      `);
+
+    res.status(201).json({ message: "Location updated successfully", locationId: result.rowsAffected[0] });
+    console.log("Vị trí đã được sửa thành công:", result);
+  } catch (error) {
+    console.error("Lỗi khi sửa vị trí:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const removeLocationShifts = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận removeLocationShifts Flutter!");
+
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy LocationId từ request body
+    const { LocationId } = req.body;
+
+    // Kiểm tra LocationId có được cung cấp không
+    if (!LocationId) {
+      return res.status(400).json({ message: "LocationId is required" });
+    }
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Locations");
+
+    // Kiểm tra LocationId có tồn tại không
+    const checkLocation = await pool.request()
+      .input('LocationId', sql.Int, LocationId)
+      .query(`
+        SELECT COUNT(*) as count 
+        FROM Locations 
+        WHERE LocationId = @LocationId
+      `);
+
+    if (checkLocation.recordset[0].count === 0) {
+      return res.status(404).json({ message: "Location not found" });
+    }
+
+    // Xóa location từ bảng Locations
+    const deleteLocation = await pool.request()
+      .input('LocationId', sql.Int, LocationId)
+      .query(`DELETE FROM Locations WHERE LocationId = @LocationId`);
+
+    if (deleteLocation.rowsAffected[0] > 0) {
+      res.status(200).json({ 
+        message: "Location deleted successfully", 
+        locationId: LocationId,
+        affectedRows: deleteLocation.rowsAffected[0]
+      });
+      console.log("Địa điểm đã được xóa thành công:", deleteLocation);
+    } else {
+      res.status(400).json({ message: "Failed to delete location" });
+    }
+
+  } catch (error) {
+    console.error("Lỗi khi xóa địa điểm:", error);
+    res.status(500).json({ 
+      message: "Lỗi Server", 
+      error: error.message 
+    });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
 module.exports = {
   getHomepage,
   findByViewID,
@@ -1463,4 +1699,8 @@ module.exports = {
   getShiftForAttendance,
   getAllIsCombo,
   getAllIsNotCombo,
+  updateShifts,
+  removeShifts,
+  updateLocationShifts,
+  removeLocationShifts,
 };
