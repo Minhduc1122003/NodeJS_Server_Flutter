@@ -43,6 +43,7 @@ const { getHomepage,
   removeShifts,
   updateLocationShifts,
   removeLocationShifts,
+  checkUsername,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -82,6 +83,7 @@ route.post('/updateShifts', updateShifts); // update ca làm.
 route.post('/removeShifts', removeShifts); // xóa ca làm.
 route.post('/updateLocationShifts', updateLocationShifts); // update ví trí
 route.post('/removeLocationShifts', removeLocationShifts); // xóa vị trí
+route.post('/checkUsername', checkUsername); // Kiểm tra trùng username hay không
 
 
 

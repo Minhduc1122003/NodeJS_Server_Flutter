@@ -1671,6 +1671,57 @@ const removeLocationShifts = async (req, res) => {
   }
 };
 
+const checkUsername = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận checkUsername Flutter!");
+
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { UserName } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!UserName) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Users");
+
+    // Thực hiện truy vấn
+    const result = await pool.request()
+      .input('UserName', sql.VarChar, UserName)
+      .query(`
+        SELECT UserName 
+        FROM Users 
+        WHERE UserName = @UserName
+      `);
+
+    // Kiểm tra kết quả trả về từ truy vấn
+    if (result.recordset.length > 0) {
+      // Nếu UserName tồn tại
+      res.status(200).json({ message: "UserName found", userName: result.recordset[0].UserName });
+      console.log("Tìm username thành công:", result.recordset[0].UserName);
+    } else {
+      // Nếu UserName không tồn tại
+      res.status(404).json({ message: "UserName not found" });
+      console.log("Không tìm thấy username:", UserName);
+    }
+  } catch (error) {
+    console.error("Lỗi khi tìm username:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
 module.exports = {
   getHomepage,
   findByViewID,
@@ -1703,4 +1754,5 @@ module.exports = {
   removeShifts,
   updateLocationShifts,
   removeLocationShifts,
+  checkUsername,
 };
