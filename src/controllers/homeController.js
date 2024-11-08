@@ -196,31 +196,34 @@ const createAccount = async (req, res) => {
     return res.status(400).json({ message: "Request body is missing" });
   }
 
-  const { email, password, username, fullname, phoneNumber, photo } = req.body;
+  const { email, password, username, fullname, phoneNumber } = req.body;
   console.log("Received account creation data from Flutter:", { email, username, fullname, phoneNumber });
+  const phoneNumberStr = String(phoneNumber); // Chuyển đổi phoneNumber thành chuỗi
 
   let pool;
   try {
     pool = await sql.connect(connection);
     console.log("Connected to database");
+    
 
     const currentDate = new Date().toISOString();
 
     let result = await pool.request()
-      .input('username', sql.VarChar(50), username)
-      .input('password', sql.VarChar(55), password)
-      .input('email', sql.VarChar(155), email)
-      .input('fullname', sql.NVarChar(155), fullname)
-      .input('phoneNumber', sql.Int, phoneNumber)
-      .input('photo', null)
-      .input('createDate', sql.DateTime, currentDate)
-      .input('updateDate', sql.DateTime, currentDate)
-      .input('updateBy', 0) // Assuming the creator is the initial updater
-      .input('status', 'Đang hoạt động') // Default status
-      .query(`
-        INSERT INTO Users (UserName, Password, Email, FullName, PhoneNumber, Photo, Role, CreateDate, UpdateDate, UpdateBy, Status, IsDelete)
-        VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, 0, @createDate, @updateDate, @updateBy, @status, 0)
-      `);
+  .input('username', sql.VarChar(50), username)
+  .input('password', sql.VarChar(255), password) // Password nên là 255 để phù hợp với bảng
+  .input('email', sql.VarChar(155), email)
+  .input('fullname', sql.NVarChar(155), fullname)
+  .input('phoneNumber', sql.VarChar(20), phoneNumberStr) // Chỉnh lại kiểu dữ liệu phù hợp
+  .input('photo', sql.VarChar(50), null) 
+  .input('role', sql.Int, 0) // Giá trị mặc định cho khách hàng
+  .input('createDate', sql.DateTime, currentDate)
+  .input('status', sql.NVarChar(20), 'Đang hoạt động') // Default status
+  .input('isDelete', sql.Bit, 0) // 0: false (mặc định)
+
+  .query(`
+    INSERT INTO Users (UserName, Password, Email, FullName, PhoneNumber, Photo, Role, CreateDate, Status, IsDelete)
+    VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, @role, @createDate, @status, @isDelete)
+  `);
 
     console.log('User creation result:', result);
  
@@ -1516,9 +1519,21 @@ const removeShifts = async (req, res) => {
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Shifts");
 
-    // Kiểm tra ShiftId có tồn tại trong Locations không
+    // Xóa các bản ghi trong bảng Attendance trước
+    const deleteAttendance = await pool.request()
+      .input('ShiftId', sql.Int, ShiftId)
+      .query(`DELETE FROM Attendance WHERE ShiftId = @ShiftId`);
+    console.log("Đã xóa các bản ghi liên quan trong bảng Attendance:", deleteAttendance.rowsAffected);
+
+    // Xóa các bản ghi trong bảng WorkSchedules trước
+    const deleteWorkSchedules = await pool.request()
+      .input('ShiftId', sql.Int, ShiftId)
+      .query(`DELETE FROM WorkSchedules WHERE ShiftId = @ShiftId`);
+    console.log("Đã xóa các bản ghi liên quan trong bảng WorkSchedules:", deleteWorkSchedules.rowsAffected);
+
+    // Xóa các bản ghi trong bảng Locations nếu cần
     const checkLocation = await pool.request()
-      .input('ShiftId', ShiftId)
+      .input('ShiftId', sql.Int, ShiftId)
       .query(`
         SELECT COUNT(*) as count 
         FROM Locations 
@@ -1526,22 +1541,26 @@ const removeShifts = async (req, res) => {
       `);
 
     if (checkLocation.recordset[0].count > 0) {
-      // Nếu tồn tại trong Locations, xóa từ Locations trước
-      await pool.request()
-        .input('ShiftId', ShiftId)
+      const deleteLocations = await pool.request()
+        .input('ShiftId', sql.Int, ShiftId)
         .query(`DELETE FROM Locations WHERE ShiftId = @ShiftId`);
+      console.log("Đã xóa các bản ghi liên quan trong bảng Locations:", deleteLocations.rowsAffected);
     }
 
     // Sau đó xóa từ bảng Shifts
     const deleteShift = await pool.request()
-      .input('ShiftId', ShiftId)
+      .input('ShiftId', sql.Int, ShiftId)
       .query(`DELETE FROM Shifts WHERE ShiftId = @ShiftId`);
 
-    res.status(201).json({ 
-      message: "Shift deleted successfully", 
-      shiftId: deleteShift.rowsAffected[0] 
-    });
-    console.log("Ca làm đã được xóa thành công:", deleteShift);
+    if (deleteShift.rowsAffected[0] > 0) {
+      res.status(200).json({ 
+        message: "Shift deleted successfully",
+        shiftId: ShiftId
+      });
+      console.log("Ca làm đã được xóa thành công:", deleteShift);
+    } else {
+      res.status(404).json({ message: "Shift not found" });
+    }
 
   } catch (error) {
     console.error("Lỗi khi xóa ca làm:", error);
@@ -1552,6 +1571,8 @@ const removeShifts = async (req, res) => {
     }
   }
 };
+
+
 
 
 const updateLocationShifts = async (req, res) => {
@@ -1611,7 +1632,7 @@ const updateLocationShifts = async (req, res) => {
 const removeLocationShifts = async (req, res) => {
   let pool;
   try {
-    console.log("Đã nhận removeLocationShifts Flutter!");
+    console.log("Đã nhận removeLocationShifts từ Flutter!");
 
     // Kiểm tra nếu body của request không tồn tại
     if (!req.body) {
@@ -1641,6 +1662,27 @@ const removeLocationShifts = async (req, res) => {
     if (checkLocation.recordset[0].count === 0) {
       return res.status(404).json({ message: "Location not found" });
     }
+
+    // Lấy ShiftId từ Location để xóa các bản ghi liên quan trong WorkSchedules
+    const getShiftId = await pool.request()
+      .input('LocationId', sql.Int, LocationId)
+      .query(`
+        SELECT ShiftId 
+        FROM Locations 
+        WHERE LocationId = @LocationId
+      `);
+
+    const { ShiftId } = getShiftId.recordset[0];
+
+    // Xóa các bản ghi trong WorkSchedules liên quan đến ShiftId
+    await pool.request()
+      .input('ShiftId', sql.Int, ShiftId)
+      .query(`
+        DELETE FROM WorkSchedules 
+        WHERE ShiftId = @ShiftId
+      `);
+
+    console.log(`Đã xóa các lịch làm việc liên quan đến ShiftId: ${ShiftId}`);
 
     // Xóa location từ bảng Locations
     const deleteLocation = await pool.request()
@@ -1721,6 +1763,66 @@ const checkUsername = async (req, res) => {
   }
 };
 
+const updateWorkSchedules = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận updateWorkSchedules từ Flutter!");
+  
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    const { ScheduleId, StartDate, EndDate, DaysOfWeek } = req.body;
+
+    if (!ScheduleId || !StartDate || !EndDate || !DaysOfWeek) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const parseDate = (dateStr) => {
+      const [day, month, year] = dateStr.split('/');
+      return `${year}-${month}-${day}`;
+    };
+
+    const formattedStartDate = parseDate(StartDate);
+    const formattedEndDate = parseDate(EndDate);
+
+    const formattedDaysOfWeek = DaysOfWeek.replace(/[\[\]]/g, '');
+
+    console.log("Dữ liệu lịch làm việc:", { ScheduleId, StartDate: formattedStartDate, EndDate: formattedEndDate, DaysOfWeek: formattedDaysOfWeek });
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table WorkSchedules");
+
+    const result = await pool.request()
+      .input('ScheduleId', sql.Int, ScheduleId)
+      .input('StartDate', sql.Date, formattedStartDate)
+      .input('EndDate', sql.Date, formattedEndDate)
+      .input('DaysOfWeek', sql.NVarChar(70), formattedDaysOfWeek)
+      .query(`
+        UPDATE WorkSchedules
+        SET StartDate = @StartDate,
+            EndDate = @EndDate,
+            DaysOfWeek = @DaysOfWeek
+        WHERE ScheduleId = @ScheduleId
+      `);
+
+    if (result.rowsAffected[0] > 0) {
+      res.status(200).json({ message: "Work schedule updated successfully" });
+      console.log("Lịch làm việc đã được sửa thành công:", result);
+    } else {
+      res.status(404).json({ message: "Work schedule not found or no changes made" });
+    }
+  } catch (error) {
+    console.error("Lỗi khi sửa lịch làm việc:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
 
 module.exports = {
   getHomepage,
@@ -1755,4 +1857,5 @@ module.exports = {
   updateLocationShifts,
   removeLocationShifts,
   checkUsername,
+  updateWorkSchedules,
 };

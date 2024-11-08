@@ -44,6 +44,7 @@ const { getHomepage,
   updateLocationShifts,
   removeLocationShifts,
   checkUsername,
+  updateWorkSchedules,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -84,6 +85,7 @@ route.post('/removeShifts', removeShifts); // xóa ca làm.
 route.post('/updateLocationShifts', updateLocationShifts); // update ví trí
 route.post('/removeLocationShifts', removeLocationShifts); // xóa vị trí
 route.post('/checkUsername', checkUsername); // Kiểm tra trùng username hay không
+route.post('/updateWorkSchedules', updateWorkSchedules); // Kiểm tra trùng username hay không
 
 
 
