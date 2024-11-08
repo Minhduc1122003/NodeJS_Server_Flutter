@@ -886,8 +886,9 @@ const uploadImage = async (req, res) => {
     res.status(200).send('File uploaded successfully.');
   } catch (error) {
     res.status(500).send('Error uploading file.');
-  }
-};
+  }  
+};    
+    
 
 
 
@@ -901,7 +902,7 @@ const getConversations = async (req, res) => {
     return res.status(400).send('Invalid user ID');
   }
 
-  let pool;
+  let pool; 
   try {
     pool = await sql.connect(connection);
 
