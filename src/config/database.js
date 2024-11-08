@@ -1,6 +1,5 @@
 const sql = require('mssql');
 
-
 // Cấu hình kết nối
 const config = {
     user: process.env.DB_USER,
