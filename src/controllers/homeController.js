@@ -77,6 +77,49 @@ const findByViewID = async (req, res) => {
   }
 };
 
+// Hàm xử lý cho route POST /findByViewID
+const findByViewIDUser = async (req, res) => {
+  console.log("Flutter has connected to login!");
+
+  // Kiểm tra xem req.body có định nghĩa không
+  if (!req.body) {
+    return res.status(400).json({ message: "Request body is missing" });
+  } 
+ 
+  const {UserID} = req.body || {};
+  console.log("Đã nhận dữ liệu từ Flutter!");
+  console.log(`UserID: ${UserID}`);
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối database");
+
+    // Thực hiện truy vấn để tìm tài khoản
+    let result = await pool.request()
+      .input('UserID', UserID)
+      .query("SELECT * FROM Users WHERE UserID = @UserID ");   
+
+    // Kiểm tra xem có tài khoản nào không
+    if (result.recordset.length > 0) {
+      res.status(200).json({ message: "Select successfully", user: result.recordset[0] });
+      console.log("data:", result.recordset[0]);
+    } else {
+      res.status(401).json({ message: "khong tim thay nguoi dung" });
+      console.log("khong tim thay du lieu");  
+
+    }
+  } catch (error) {
+    console.error("Error fetching accounts:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close(); // Đóng pool
+    }
+  }
+};
 // Hàm gửi email
 const sendEmail = async (req, res) => {
   console.log("Sending email!");
@@ -843,8 +886,9 @@ const uploadImage = async (req, res) => {
     res.status(200).send('File uploaded successfully.');
   } catch (error) {
     res.status(500).send('Error uploading file.');
-  }
-};
+  }  
+};    
+    
 
 
 
@@ -858,7 +902,7 @@ const getConversations = async (req, res) => {
     return res.status(400).send('Invalid user ID');
   }
 
-  let pool;
+  let pool; 
   try {
     pool = await sql.connect(connection);
 
@@ -1858,4 +1902,5 @@ module.exports = {
   removeLocationShifts,
   checkUsername,
   updateWorkSchedules,
+  findByViewIDUser,
 };
