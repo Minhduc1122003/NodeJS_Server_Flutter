@@ -45,6 +45,7 @@ const { getHomepage,
   removeLocationShifts,
   checkUsername,
   updateWorkSchedules,
+  getFilmFavourire,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -59,6 +60,8 @@ route.get('/getAllListShift', getAllListShift); //  get danh sách user
 route.get('/getAllListLocation', getAllListLocation); //  get danh sách user
 route.get('/getAllIsCombo', getAllIsCombo); //  get danh sách iscombo
 route.get('/getAllIsNotCombo', getAllIsNotCombo); //  get danh sách isnotcombo
+route.get('/getFilmFavourire/:userId', getFilmFavourire);
+
 
 
 // ------- mdethod post ----------------

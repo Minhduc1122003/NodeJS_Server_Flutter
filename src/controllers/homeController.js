@@ -616,6 +616,7 @@ const addFavourire = async (req, res) => {
   }
 };
 
+
 const removeFavourire = async (req, res) => {
   console.log("removeFavourire");
 
@@ -1866,6 +1867,53 @@ const updateWorkSchedules = async (req, res) => {
   }
 };
 
+const getFilmFavourire = async (req, res) => {
+  console.log("sendFavourire");
+
+  // Lấy userId từ req.params
+  const userId = parseInt(req.params.userId);
+  if (isNaN(userId)) {
+    return res.status(400).json({ message: "Invalid or missing userId in params" });
+  }
+
+  console.log("Đã nhận UserID từ Flutter!");
+  console.log(`UserID: ${userId}`);
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối database");
+
+    // Thực hiện truy vấn để lấy dữ liệu từ bảng Favourite
+    let result = await pool.request() 
+      .input('userId', sql.Int, userId)
+      .query(`
+        SELECT u.UserId, m.MovieID, m.Title, m.PosterUrl 
+        FROM Favourite f 
+        JOIN Users u ON u.UserId = f.UserId
+        JOIN Movies m ON m.MovieID = f.MovieID
+        WHERE f.UserId = @userId
+      `);
+
+    // Trả về kết quả truy vấn
+    res.status(200).json({
+      data: result.recordset,
+    });
+
+    console.log("Data fetched successfully");
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
+
 
 
 module.exports = {
@@ -1903,4 +1951,5 @@ module.exports = {
   checkUsername,
   updateWorkSchedules,
   findByViewIDUser,
+  getFilmFavourire,
 };
