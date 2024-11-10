@@ -44,15 +44,14 @@ const { getHomepage,
   updateLocationShifts,
   removeLocationShifts,
   checkUsername,
-<<<<<<< Updated upstream
   updateWorkSchedules,
-=======
   findByViewIDUser,
->>>>>>> Stashed changes
+  createMomoPayment, 
+  momoCallback,
+  checkTransactionStatus,
 
  } = require('../controllers/homeController');
 const route = express.Router();
-
 // khai báo route
 route.get('/', getHomepage);
 route.get('/getMoviesDangChieu', getMoviesDangChieu); // get danh sách nhắn tin
@@ -89,15 +88,10 @@ route.post('/removeShifts', removeShifts); // xóa ca làm.
 route.post('/updateLocationShifts', updateLocationShifts); // update ví trí
 route.post('/removeLocationShifts', removeLocationShifts); // xóa vị trí
 route.post('/checkUsername', checkUsername); // Kiểm tra trùng username hay không
-<<<<<<< Updated upstream
 route.post('/updateWorkSchedules', updateWorkSchedules); // Kiểm tra trùng username hay không
-
-
-
-
-=======
 route.post('/findByViewIDUser', findByViewIDUser); // 
->>>>>>> Stashed changes
-
+route.post('/create-momo-payment', createMomoPayment);
+route.get('/momo-callback', momoCallback);
+route.get("/check-transaction-status", checkTransactionStatus);
 
 module.exports=route;
