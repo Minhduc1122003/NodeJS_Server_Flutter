@@ -3,8 +3,9 @@ const sql = require("mssql");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 const crypto = require('crypto');
-
-
+const momoConfig = require('../config/momo');
+const axios = require('axios');
+ 
 // Hàm xử lý cho route GET /
 const getHomepage = async (req, res) => {
   let pool;
@@ -1915,6 +1916,167 @@ const getFilmFavourire = async (req, res) => {
 
 
 
+const createMomoPayment = async (req, res) => {
+  try {
+      const { amount, orderId, orderInfo } = req.body;
+
+      // Create signature
+      const rawSignature = `accessKey=${momoConfig.MOMO_ACCESS_KEY}&amount=${amount}&extraData=&ipnUrl=${momoConfig.IPN_URL}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${momoConfig.MOMO_PARTNER_CODE}&redirectUrl=${momoConfig.REDIRECT_URL}&requestId=${orderId}&requestType=${momoConfig.REQUEST_TYPE}`;
+      
+      const signature = crypto
+          .createHmac('sha256', momoConfig.MOMO_SECRET_KEY)
+          .update(rawSignature)
+          .digest('hex');
+
+      // Create payload for MoMo
+      const requestBody = {
+          partnerCode: momoConfig.MOMO_PARTNER_CODE,
+          accessKey: momoConfig.MOMO_ACCESS_KEY,
+          partnerName: "Test",
+          storeId: "MomoTestStore",
+          requestId: orderId,
+          amount: amount,
+          orderId: orderId,
+          orderInfo: orderInfo,
+          redirectUrl: momoConfig.REDIRECT_URL,
+          ipnUrl: momoConfig.IPN_URL,
+          requestType: momoConfig.REQUEST_TYPE,
+          extraData: "",
+          signature: signature
+      };
+
+      // Call MoMo API
+      const response = await axios.post(momoConfig.MOMO_ENDPOINT, requestBody);
+
+      // Return payUrl to client
+      res.status(200).json({
+          payUrl: response.data.payUrl
+      });
+
+  } catch (error) {
+      console.error("Error creating MoMo payment:", error);
+      res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+const paymentStatus = {}; // Khởi tạo object lưu trạng thái thanh toán
+
+const momoCallback = async (req, res) => {
+  console.log("MoMo callback received!");
+
+  try {
+    // Lấy các tham số từ query string (đối với yêu cầu GET)
+    const { orderId, resultCode } = req.query;
+
+    // Kiểm tra trạng thái thanh toán
+    if (resultCode === '0') {
+      paymentStatus[orderId] = "success"; // Lưu trạng thái thành công
+      return res.status(200).json({ message: "Payment successful" });
+    } else {
+      paymentStatus[orderId] = "failed"; // Lưu trạng thái thất bại
+      return res.status(400).json({ message: "Payment failed" });
+    }
+
+  } catch (error) {
+    console.error("Error handling MoMo callback:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+
+const checkTransactionStatus = async (req, res) => {
+  try {
+    const { orderId } = req.query;
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "OrderId is required"
+      });
+    }
+
+    // Tạo requestId mới cho mỗi lần check
+    const requestId = `${orderId}_${Date.now()}`;
+
+    // Tạo chuỗi signature theo format của MoMo
+    const rawSignature = `accessKey=${momoConfig.MOMO_ACCESS_KEY}&orderId=${orderId}&partnerCode=${momoConfig.MOMO_PARTNER_CODE}&requestId=${requestId}`;
+
+    // Tạo signature với HMAC SHA256
+    const signature = crypto
+      .createHmac('sha256', momoConfig.MOMO_SECRET_KEY)
+      .update(rawSignature)
+      .digest('hex');
+
+    // Tạo payload cho API check status của MoMo
+    const requestBody = {
+      partnerCode: momoConfig.MOMO_PARTNER_CODE,
+      accessKey: momoConfig.MOMO_ACCESS_KEY,
+      requestId: requestId,
+      orderId: orderId,
+      signature: signature
+    };
+
+    // Gọi API check status của MoMo
+    const response = await axios.post(
+      momoConfig.MOMO_STATUS_ENDPOINT, // Đổi đường dẫn ở đây
+      requestBody
+    );
+
+    // Xử lý response từ MoMo
+    const transactionStatus = response.data;
+
+    // Map các mã trạng thái từ MoMo
+    let status;
+    switch (transactionStatus.resultCode) {
+      case 0: // Giao dịch thành công
+        status = "success";
+        break;
+      case 1006: // Giao dịch thất bại
+        status = "failed";
+        break;
+      case 1003: // Giao dịch đang xử lý
+      case 1004: // Giao dịch bị từ chối
+        status = "pending";
+        break;
+      default:
+        status = "unknown";
+    }
+
+    // Lưu trạng thái vào paymentStatus object
+    paymentStatus[orderId] = status;
+
+    // Tạo response
+    const responseData = {
+      success: true,
+      orderId: orderId,
+      amount: transactionStatus.amount,
+      transactionId: transactionStatus.transId || null,
+      status: status,
+      message: transactionStatus.message,
+      payType: transactionStatus.payType || null,
+      responseTime: transactionStatus.responseTime
+    };
+
+    return res.status(200).json(responseData);
+
+  } catch (error) {
+    console.error("Error checking MoMo transaction status:", error);
+    
+    if (error.response && error.response.data) {
+      return res.status(400).json({
+        success: false,
+        message: "MoMo API Error",
+        error: error.response.data
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
 
 module.exports = {
   getHomepage,
@@ -1952,4 +2114,7 @@ module.exports = {
   updateWorkSchedules,
   findByViewIDUser,
   getFilmFavourire,
+  createMomoPayment,
+  momoCallback,
+  checkTransactionStatus,
 };
