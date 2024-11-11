@@ -2077,6 +2077,56 @@ const checkTransactionStatus = async (req, res) => {
   }
 };
 
+const getActor = async (req, res) => {
+  console.log("Request received to fetch actor and movie data!");
+
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connected to database successfully");
+
+    // Thực hiện truy vấn để lấy thông tin diễn viên và movie ID
+    let result = await pool.request()
+      .query(`       
+        SELECT 
+          A.Name,
+          A.Image,
+          M.MovieID  -- Lấy MovieID từ bảng Movies
+        FROM 
+          Actors A
+        JOIN 
+          MovieActors MA ON A.ActorID = MA.ActorID
+        JOIN 
+          Movies M ON MA.MovieID = M.MovieID;
+      `);
+
+    console.log('Fetched actor and movie data:', result.recordset);
+
+    res.status(200).json({
+      success: true,
+      data: result.recordset,
+      message: "Actor and movie data fetched successfully"
+    });
+
+  } catch (error) {
+    console.error("Error fetching actor and movie data:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Internal Server Error", 
+      error: error.message 
+    });
+  } finally {
+    // Đóng kết nối
+    if (pool) {
+      await pool.close();
+      console.log("Database connection closed");
+    }
+  }
+};
+
+
+
 
 module.exports = {
   getHomepage,
@@ -2117,4 +2167,5 @@ module.exports = {
   createMomoPayment,
   momoCallback,
   checkTransactionStatus,
+  getActor,
 };
