@@ -764,7 +764,7 @@ const getChair = async (req, res) => {
           s.CinemaRoomID = @cinemaRoomID -- Lọc theo CinemaRoomID
         ORDER BY  
           s.SeatID;
-      `);
+      `); 
 
     // Trả về phản hồi thành công với danh sách ghế
     res.status(200).json(result.recordset);
@@ -787,46 +787,39 @@ const getChair = async (req, res) => {
 const insertBuyTicket = async (req, res) => {
   let pool;
   try {
-    // Get values from the request body
-    const buyTicketId = parseInt(req.body.buyTicketId, 10); // INT
-    const userId = parseInt(req.body.userId, 10); // INT
-    const movieId = parseInt(req.body.movieId, 10); // INT
-    const quantity = parseInt(req.body.quantity, 10); // INT
-    const totalPrice = parseFloat(req.body.totalPrice); // FLOAT
-    const showtimeId = parseInt(req.body.showtimeId, 10); // INT
-    const seatIDs = req.body.seatIDs; // Giả sử seatIDs là mảng
-    const seatIDsString = Array.isArray(seatIDs) ? seatIDs.join(',') : seatIDs; // Chuyển thành chuỗi
-    
-    console.log("buyTicketId:", buyTicketId);
-    console.log("UserId:", userId);
-    console.log("MovieId:", movieId);
-    console.log("Quantity:", quantity);
-    console.log("TotalPrice:", totalPrice);
-    console.log("ShowtimeId:", showtimeId);
-    console.log("SeatIDs:", seatIDs);
+    // Lấy dữ liệu từ request body
+    const { BuyTicketId, UserId, MovieID, ShowtimeID, SeatIDs, ComboIDs} = req.body;
+
+ 
+    // In thông tin ra console để kiểm tra
+    console.log("buyTicketId:", BuyTicketId);
+    console.log("UserId:", UserId);
+    console.log("MovieID:", MovieID);
+    console.log("ShowtimeID:", ShowtimeID);
+    console.log("SeatIDs:", SeatIDs);
+    console.log("ComboIDs:", ComboIDs);
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
-    console.log("Connecting to SQL Server Table Showtime");
+    pool = await sql.connect(connection); 
+    console.log("Connecting to SQL Server");
 
     // Prepare and execute the stored procedure with dynamic values
     const result = await pool.request()
-    .input('BuyTicketId', buyTicketId)
-    .input('UserId', userId)
-    .input('MovieID', movieId)
-      .input('Quantity', quantity)
-      .input('TotalPrice', totalPrice)
-      .input('ShowtimeID', showtimeId)
-      .input('SeatIDs', sql.NVarChar(sql.MAX), seatIDsString) // Sử dụng seatIDsString
-      .query(`EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID, @Quantity, @TotalPrice, @ShowtimeID, @SeatIDs;`);
-
-    // Gửi dữ liệu theo định dạng JSON
+      .input('BuyTicketId', BuyTicketId)
+      .input('UserId', UserId)
+      .input('MovieID', MovieID)
+      .input('ShowtimeID', ShowtimeID)
+      .input('SeatIDs', SeatIDs)
+      .input('ComboIDs', ComboIDs)
+  
+      .query(`EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID, @ShowtimeID, @SeatIDs, @ComboIDs`);
+    // Gửi kết quả trả về
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
     console.log("Kết quả truy vấn:", result.recordset);
 
   } catch (error) {
-    console.error("Lỗi khi truy vấn lịch chiếu:", error);
+    console.error("Lỗi khi truy vấn:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
   } finally {
     if (pool) {
@@ -834,6 +827,7 @@ const insertBuyTicket = async (req, res) => {
     }
   }
 };
+
 
 
 const getShowtimeListForAdmin = async (req, res) => {
@@ -2160,11 +2154,11 @@ module.exports = {
   removeShifts,
   updateLocationShifts,
   removeLocationShifts,
-  checkUsername,
-  updateWorkSchedules,
+  checkUsername, 
+  updateWorkSchedules, 
   findByViewIDUser,
-  getFilmFavourire,
-  createMomoPayment,
+  getFilmFavourire, 
+  createMomoPayment, 
   momoCallback,
   checkTransactionStatus,
   getActor,
