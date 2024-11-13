@@ -61,7 +61,6 @@ const findByViewID = async (req, res) => {
     // Kiểm tra xem có tài khoản nào không
     if (result.recordset.length > 0) {
       res.status(200).json({ message: "Login successful", user: result.recordset[0] });
-      console.log("data:", result.recordset[0]);
     } else {
       res.status(401).json({ message: "Invalid username or password" });
       console.log("khong tim thay du lieu");
@@ -105,7 +104,6 @@ const findByViewIDUser = async (req, res) => {
     // Kiểm tra xem có tài khoản nào không
     if (result.recordset.length > 0) {
       res.status(200).json({ message: "Select successfully", user: result.recordset[0] });
-      console.log("data:", result.recordset[0]);
     } else {
       res.status(401).json({ message: "khong tim thay nguoi dung" });
       console.log("khong tim thay du lieu");  
@@ -234,14 +232,13 @@ const sendEmail = async (req, res) => {
 
 // hàm tạo tài khoản
 const createAccount = async (req, res) => {
-  console.log("Flutter has requested to create an account!");
 
+  
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
   }
 
   const { email, password, username, fullname, phoneNumber } = req.body;
-  console.log("Received account creation data from Flutter:", { email, username, fullname, phoneNumber });
   const phoneNumberStr = String(phoneNumber); // Chuyển đổi phoneNumber thành chuỗi
 
   let pool;
@@ -269,14 +266,11 @@ const createAccount = async (req, res) => {
     VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, @role, @createDate, @status, @isDelete)
   `);
 
-    console.log('User creation result:', result);
  
     if (result.rowsAffected[0] > 0) {
       res.status(200).json({ message: "Account created successfully" });
-      console.log("Account created:", { username, email });
     } else {
       res.status(400).json({ message: "Account creation failed" });
-      console.log("Account creation failed");
     }
   } catch (error) {
     console.error("Error creating account:", error);
@@ -298,14 +292,12 @@ const getAllUserData = async (req, res) => {
   }
 
   const username = req.body.username;
-  console.log("Đã nhận dữ liệu truy vấn từ Flutter!");
   console.log(`Username: ${username}`);
 
   let pool;
   try {
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-    console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để lấy tất cả người dùng trừ user có `username` đã cho
     let result = await pool.request()
@@ -314,7 +306,6 @@ const getAllUserData = async (req, res) => {
         SELECT * FROM Users WHERE UserName != @username
       `);
 
-    console.log('Fetched users data:', result.recordset);
 
     // Trả kết quả dưới dạng JSON
     res.status(200).json(result.recordset);
@@ -345,7 +336,6 @@ const getMoviesDangChieu = async (req, res) => {
   try {
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-    console.log("Connecting to SQL Server");
 
     // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
     let result = await pool.request().query(`
@@ -390,9 +380,7 @@ GROUP BY
     // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
     res.setHeader('Content-Type', 'application/json');
     res.send(JSON.stringify(result.recordset, null, 2)); // Indent with 2 spaces for readability
-    console.log(result.recordset);
 
-    console.log("Clients have connected");
   } catch (error) {
     console.error("Error fetching movies:", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message }); 
@@ -456,9 +444,7 @@ GROUP BY
     // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
     res.setHeader('Content-Type', 'application/json');
     res.send(JSON.stringify(result.recordset, null, 2)); // Indent with 2 spaces for readability
-    console.log(result.recordset);
 
-    console.log("Clients have connected");
   } catch (error) {
     console.error("Error fetching movies:", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message });
@@ -488,7 +474,6 @@ const findByViewMovieID = async (req, res) => {
   try {
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-    console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để tìm thông tin phim dựa trên MovieID và kiểm tra xem có trong Favourite không
     let result = await pool.request()
@@ -560,10 +545,8 @@ GROUP BY
     // Kiểm tra xem có dữ liệu phim nào không
     if (result.recordset.length > 0) {
       res.status(200).json({ message: "Movie found", movie: result.recordset[0] });
-      console.log("Movie data:", result.recordset[0]);
     } else {
       res.status(404).json({ message: "Movie not found" });
-      console.log("Không tìm thấy phim");
     }
   } catch (error) {
     console.error("Error fetching movie:", error);
@@ -586,7 +569,6 @@ const addFavourire = async (req, res) => {
 
   const movieId = parseInt(req.body.movieId, 10);
   const userId = parseInt(req.body.userId, 10);
-  console.log("Đã nhận MovieID và UserID từ Flutter!");
   console.log(`MovieID: ${movieId}, UserID: ${userId}`);
 
   let pool;
@@ -628,14 +610,12 @@ const removeFavourire = async (req, res) => {
 
   const movieId = parseInt(req.body.movieId, 10);
   const userId = parseInt(req.body.userId, 10);
-  console.log("Đã nhận MovieID và UserID từ Flutter!");
   console.log(`MovieID: ${movieId}, UserID: ${userId}`);
 
   let pool;
   try {
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-    console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để xóa dữ liệu từ bảng Favourite
     const result = await pool.request()
@@ -683,7 +663,6 @@ const getShowtime = async (req, res) => {
 
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-    console.log("Connecting to SQL Server Table Showtime");
 
     const result = await pool.request()
       .input('InputDate', date)
@@ -713,7 +692,6 @@ ORDER BY
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn:", result.recordset);
 
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
@@ -736,14 +714,12 @@ const getChair = async (req, res) => {
 
   const showTimeID = parseInt(req.body.showTimeID);
   const cinemaRoomID = parseInt(req.body.cinemaRoomID); // Nhận CinemaRoomID
-  console.log("Đã nhận showTimeID và CinemaRoomID từ Flutter!");
   console.log(`showTimeID: ${showTimeID}, cinemaRoomID: ${cinemaRoomID}`);
 
   let pool;
   try {
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-    console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để lấy danh sách ghế
     const result = await pool.request()
@@ -768,8 +744,6 @@ const getChair = async (req, res) => {
 
     // Trả về phản hồi thành công với danh sách ghế
     res.status(200).json(result.recordset);
-    console.log(result); 
-    console.log("(:)====||===================================>");
     console.log("Danh sách ghế đã được trả về thành công");
 
   } catch (error) {
@@ -790,14 +764,6 @@ const insertBuyTicket = async (req, res) => {
     // Lấy dữ liệu từ request body
     const { BuyTicketId, UserId, MovieID, ShowtimeID, SeatIDs, ComboIDs} = req.body;
 
- 
-    // In thông tin ra console để kiểm tra
-    console.log("buyTicketId:", BuyTicketId);
-    console.log("UserId:", UserId);
-    console.log("MovieID:", MovieID);
-    console.log("ShowtimeID:", ShowtimeID);
-    console.log("SeatIDs:", SeatIDs);
-    console.log("ComboIDs:", ComboIDs);
 
     // Kết nối đến SQL Server
     pool = await sql.connect(connection); 
@@ -816,7 +782,6 @@ const insertBuyTicket = async (req, res) => {
     // Gửi kết quả trả về
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn:", result.recordset);
 
   } catch (error) {
     console.error("Lỗi khi truy vấn:", error);
@@ -834,7 +799,6 @@ const getShowtimeListForAdmin = async (req, res) => {
   let pool;
   try {
 
-    console.log("Đã nhận getShowtimeListForAdmin Flutter!");
 
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
@@ -860,7 +824,6 @@ ORDER BY
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn getShowtimeListForAdmin:", result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -966,14 +929,6 @@ const createFilm = async (req, res) => {
     const seatIDs = req.body.seatIDs; // Giả sử seatIDs là mảng
     const seatIDsString = Array.isArray(seatIDs) ? seatIDs.join(',') : seatIDs; // Chuyển thành chuỗi
     
-    console.log("buyTicketId:", buyTicketId);
-    console.log("UserId:", userId);
-    console.log("MovieId:", movieId);
-    console.log("Quantity:", quantity);
-    console.log("TotalPrice:", totalPrice);
-    console.log("ShowtimeId:", showtimeId);
-    console.log("SeatIDs:", seatIDs);
-
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Showtime");
@@ -992,7 +947,6 @@ const createFilm = async (req, res) => {
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn:", result.recordset);
 
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
@@ -1022,7 +976,6 @@ const getUserListForAdmin = async (req, res) => {
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn getUserListForAdmin:", result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1079,7 +1032,6 @@ const createShifts = async (req, res) => {
       `);
 
     res.status(201).json({ message: "Shift created successfully", shiftId: result.rowsAffected[0] });
-    console.log("Ca làm đã được tạo thành công:", result);
   } catch (error) {
     console.error("Lỗi khi tạo ca làm:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1141,7 +1093,6 @@ const createLocation = async (req, res) => {
       `);
 
     res.status(201).json({ message: "Location created successfully", locationId: result.rowsAffected[0] });
-    console.log("Vị trí đã được tạo thành công:", result);
   } catch (error) {
     console.error("Lỗi khi tạo vị trí:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1195,7 +1146,6 @@ const createWorkSchedules = async (req, res) => {
       `);
 
     res.status(201).json({ message: "Work schedule created successfully", scheduleId: result.rowsAffected[0] });
-    console.log("Lịch làm việc đã được tạo thành công:", result);
   } catch (error) {
     console.error("Lỗi khi tạo lịch làm việc:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1224,7 +1174,6 @@ const getAllListShift = async (req, res) => {
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn getUserListForAdmin:", result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1269,7 +1218,6 @@ JOIN
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn getUserListForAdmin:", result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1293,11 +1241,7 @@ const getAllWorkSchedulesByID = async (req, res) => {
 
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-    console.log("Connecting to SQL Server Table WorkSchedules");
-
-    console.log("UserId:", userId);
-    console.log("StartDate:", startDate);
-    console.log("EndDate:", endDate);
+   
 
     const result = await pool.request()
       .input('userId', sql.Int, userId) // Sử dụng giá trị số nguyên cho userId
@@ -1314,7 +1258,6 @@ const getAllWorkSchedulesByID = async (req, res) => {
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn getAllWorkSchedulesByID:", result.recordset);
 
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch làm việc:", error);
@@ -1366,7 +1309,6 @@ const getShiftForAttendance = async (req, res) => {
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
-    console.log("Kết quả truy vấn getShiftForAttendance:", result.recordset);
 
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch làm việc:", error);
@@ -1405,7 +1347,6 @@ const getAllIsCombo = async (req, res) => {
        
       `);
 
-    console.log('Fetched combo data:', result.recordset);
 
     res.status(200).json({
       success: true,
@@ -1454,7 +1395,6 @@ const getAllIsNotCombo = async (req, res) => {
 		WHERE IsCombo = 0     
       `);
 
-    console.log('Fetched combo data:', result.recordset);
 
     res.status(200).json({
       success: true,
@@ -1532,7 +1472,6 @@ const updateShifts = async (req, res) => {
       `);
 
     res.status(201).json({ message: "Shift update successfully", shiftId: result.rowsAffected[0] });
-    console.log("Ca làm đã được sửa thành công:", result);
   } catch (error) {
     console.error("Lỗi khi sửa ca làm:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1658,7 +1597,6 @@ const updateLocationShifts = async (req, res) => {
       `);
 
     res.status(201).json({ message: "Location updated successfully", locationId: result.rowsAffected[0] });
-    console.log("Vị trí đã được sửa thành công:", result);
   } catch (error) {
     console.error("Lỗi khi sửa vị trí:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1735,7 +1673,6 @@ const removeLocationShifts = async (req, res) => {
         locationId: LocationId,
         affectedRows: deleteLocation.rowsAffected[0]
       });
-      console.log("Địa điểm đã được xóa thành công:", deleteLocation);
     } else {
       res.status(400).json({ message: "Failed to delete location" });
     }
@@ -1787,7 +1724,6 @@ const checkUsername = async (req, res) => {
     if (result.recordset.length > 0) {
       // Nếu UserName tồn tại
       res.status(200).json({ message: "UserName found", userName: result.recordset[0].UserName });
-      console.log("Tìm username thành công:", result.recordset[0].UserName);
     } else {
       // Nếu UserName không tồn tại
       res.status(404).json({ message: "UserName not found" });
