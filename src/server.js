@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // Khai báo cổng và hostname từ biến môi trường
-const port = process.env.PORT || 10000; // Render cung cấp PORT qua biến môi trường
+const port = process.env.PORT || 10000; 
 const hostname = process.env.HOST_NAME || 'localhost';
 const server = http.createServer(app);
 
