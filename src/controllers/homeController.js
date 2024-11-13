@@ -2055,6 +2055,40 @@ const getActor = async (req, res) => {
   }
 };
 
+const updateSatusBuyTicketInfo = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận updateSatusBuyTicketInfo Flutter!");
+
+    // Lấy BuyTicketId từ query string
+    const { BuyTicketId } = req.query;
+
+    // Kiểm tra nếu BuyTicketId không tồn tại
+    if (!BuyTicketId) {
+      return res.status(400).json({ message: "BuyTicketId is missing in query" });
+    }
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table BuyTicketInfo");
+
+    const result = await pool.request()
+      .input('BuyTicketId', sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
+      .query(`
+        UPDATE BuyTicketInfo 
+        SET Status = 'Đã thanh toán'
+        WHERE BuyTicketId = @BuyTicketId
+      `);
+
+    res.status(200).json({ message: "successfully" });
+  } catch (error) {
+    console.error("Lỗi khi sửa trạng thái:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
 
 
 
@@ -2098,4 +2132,5 @@ module.exports = {
   momoCallback,
   checkTransactionStatus,
   getActor,
+  updateSatusBuyTicketInfo,
 };

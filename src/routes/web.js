@@ -51,6 +51,7 @@ const { getHomepage,
   momoCallback,
   checkTransactionStatus,
   getActor,
+  updateSatusBuyTicketInfo,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -66,6 +67,7 @@ route.get('/getAllIsCombo', getAllIsCombo); //  get danh sách iscombo
 route.get('/getAllIsNotCombo', getAllIsNotCombo); //  get danh sách isnotcombo
 route.get('/getFilmFavourire/:userId', getFilmFavourire);
 route.get('/getActor', getActor);
+route.get('/updateSatusBuyTicketInfo', updateSatusBuyTicketInfo);
 
 
 
