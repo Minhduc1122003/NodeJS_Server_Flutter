@@ -762,7 +762,7 @@ const insertBuyTicket = async (req, res) => {
   let pool;
   try {
     // Lấy dữ liệu từ request body
-    const { BuyTicketId, UserId, MovieID, ShowtimeID, SeatIDs, ComboIDs} = req.body;
+    const { BuyTicketId, UserId, MovieID,TotalPriceAll, ShowtimeID, SeatIDs, ComboIDs} = req.body;
 
 
     // Kết nối đến SQL Server
@@ -774,11 +774,12 @@ const insertBuyTicket = async (req, res) => {
       .input('BuyTicketId', BuyTicketId)
       .input('UserId', UserId)
       .input('MovieID', MovieID)
+      .input('TotalPriceAll', TotalPriceAll)
       .input('ShowtimeID', ShowtimeID)
       .input('SeatIDs', SeatIDs)
       .input('ComboIDs', ComboIDs)
   
-      .query(`EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID, @ShowtimeID, @SeatIDs, @ComboIDs`);
+      .query(`EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID,@TotalPriceAll, @ShowtimeID, @SeatIDs, @ComboIDs`);
     // Gửi kết quả trả về
     res.setHeader('Content-Type', 'application/json');
     res.json(result.recordset);
@@ -2089,6 +2090,40 @@ const updateSatusBuyTicketInfo = async (req, res) => {
     }
   }
 };
+const findAllBuyTicketByUserId = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận findAllBuyTicketByUserId Flutter!");
+
+    // Lấy UserId từ query string
+    const { UserId } = req.query;
+
+    // Kiểm tra nếu UserId không tồn tại
+    if (!UserId) {
+      return res.status(400).json({ message: "UserId is missing in query" });
+    }
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server");
+
+    const result = await pool.request()
+      .input('UserId', sql.VarChar, UserId) // Đảm bảo kiểu dữ liệu tương ứng
+      .query(`
+       EXEC FindAllBuyTicketByUserId @UserId
+      `); 
+
+    // Trả về kết quả truy vấn
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error("Lỗi khi lấy dữ liệu:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
 
 
 
@@ -2133,4 +2168,5 @@ module.exports = {
   checkTransactionStatus,
   getActor,
   updateSatusBuyTicketInfo,
+  findAllBuyTicketByUserId,
 };

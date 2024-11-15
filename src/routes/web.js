@@ -52,6 +52,7 @@ const { getHomepage,
   checkTransactionStatus,
   getActor,
   updateSatusBuyTicketInfo,
+  findAllBuyTicketByUserId,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -68,7 +69,7 @@ route.get('/getAllIsNotCombo', getAllIsNotCombo); //  get danh sách isnotcombo
 route.get('/getFilmFavourire/:userId', getFilmFavourire);
 route.get('/getActor', getActor);
 route.get('/updateSatusBuyTicketInfo', updateSatusBuyTicketInfo);
-
+route.get('/findAllBuyTicketByUserId', findAllBuyTicketByUserId);
 
 
 
