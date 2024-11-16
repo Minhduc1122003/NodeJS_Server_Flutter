@@ -53,6 +53,8 @@ const { getHomepage,
   getActor,
   updateSatusBuyTicketInfo,
   findAllBuyTicketByUserId,
+  getTop5RateMovie,
+  FindOneBuyTicketById,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -70,6 +72,10 @@ route.get('/getFilmFavourire/:userId', getFilmFavourire);
 route.get('/getActor', getActor);
 route.get('/updateSatusBuyTicketInfo', updateSatusBuyTicketInfo);
 route.get('/findAllBuyTicketByUserId', findAllBuyTicketByUserId);
+route.get('/getTop5RateMovie', getTop5RateMovie);
+route.get('/FindOneBuyTicketById', FindOneBuyTicketById);
+
+
 
 
 

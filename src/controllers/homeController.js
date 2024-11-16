@@ -2124,6 +2124,92 @@ const findAllBuyTicketByUserId = async (req, res) => {
   }
 };
 
+const getTop5RateMovie = async (req, res) => {
+  let pool;
+  try {
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+
+    // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
+    let result = await pool.request().query(`
+SELECT TOP 5
+    m.MovieID,
+    m.Title,
+    m.PosterUrl,
+    ( 
+        SELECT STRING_AGG(g.GenreName, ', ') 
+        FROM MovieGenre mg
+        JOIN Genre g ON mg.IdGenre = g.IdGenre
+        WHERE mg.MovieID = m.MovieID
+    ) AS Genres, 
+    ROUND(AVG(r.Rating), 2) AS AverageRating, 
+    COUNT(r.IdRate) AS ReviewCount 
+FROM 
+    Movies m
+LEFT JOIN 
+    Cinemas c ON m.CinemaID = c.CinemaID
+LEFT JOIN  
+    Rate r ON m.MovieID = r.MovieID
+WHERE 
+    m.StatusMovie = N'Đang chiếu' 
+GROUP BY 
+    m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
+    m.PosterUrl, m.TrailerUrl, m.Age,  -- Thêm Age vào GROUP BY
+    m.SubTitle, m.Voiceover, 
+    c.CinemaName, c.Address, m.CinemaID  -- Đã thêm CinemaID trước đó
+ORDER BY 
+    AverageRating DESC;
+
+    `);
+
+    // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(result.recordset, null, 2)); // Indent with 2 spaces for readability
+
+  } catch (error) {
+    console.error("Error fetching movies:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message }); 
+  } finally {
+    // Đóng kết nối nếu pool đã được khởi tạo
+    if (pool) {
+      await pool.close(); // Đóng pool
+    }
+  }
+};
+
+const FindOneBuyTicketById = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận updateSatusBuyTicketInfo Flutter!");
+
+    // Lấy BuyTicketId từ query string
+    const { BuyTicketId } = req.query;
+
+    // Kiểm tra nếu BuyTicketId không tồn tại
+    if (!BuyTicketId) {
+      return res.status(400).json({ message: "BuyTicketId is missing in query" });
+    }
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table BuyTicketInfo");
+
+    const result = await pool.request()
+      .input('BuyTicketId', sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
+      .query(`
+      EXEC FindOneBuyTicketById @BuyTicketId
+
+      `);
+
+      res.status(200).json({ data: result.recordset });
+  } catch (error) {
+    console.error("Lỗi khi sửa trạng thái:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
 
 
 
@@ -2169,4 +2255,6 @@ module.exports = {
   getActor,
   updateSatusBuyTicketInfo,
   findAllBuyTicketByUserId,
+  getTop5RateMovie,
+  FindOneBuyTicketById,
 };
