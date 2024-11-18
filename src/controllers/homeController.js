@@ -2176,7 +2176,7 @@ ORDER BY
     }
   }
 };
-
+ 
 const FindOneBuyTicketById = async (req, res) => {
   let pool;
   try {
