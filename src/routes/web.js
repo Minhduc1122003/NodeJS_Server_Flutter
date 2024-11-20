@@ -55,6 +55,10 @@ const { getHomepage,
   findAllBuyTicketByUserId,
   getTop5RateMovie,
   FindOneBuyTicketById,
+  insertRate,
+  getOneRate,
+  getAllRateInfoByMovieID,
+  checkInBuyTicket,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -74,8 +78,7 @@ route.get('/updateSatusBuyTicketInfo', updateSatusBuyTicketInfo);
 route.get('/findAllBuyTicketByUserId', findAllBuyTicketByUserId);
 route.get('/getTop5RateMovie', getTop5RateMovie);
 route.get('/FindOneBuyTicketById', FindOneBuyTicketById);
-
-
+route.get('/checkInBuyTicket', checkInBuyTicket);
 
 
 
@@ -108,5 +111,9 @@ route.post('/findByViewIDUser', findByViewIDUser); //
 route.post('/create-momo-payment', createMomoPayment);
 route.get('/momo-callback', momoCallback);
 route.get("/check-transaction-status", checkTransactionStatus);
+route.post('/insertRate', insertRate); // 
+route.post('/getRate', getOneRate); // 
+route.post('/getAllRateInfoByMovieID', getAllRateInfoByMovieID); // 
+
 
 module.exports=route;

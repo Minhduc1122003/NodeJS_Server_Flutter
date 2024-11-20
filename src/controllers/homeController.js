@@ -480,6 +480,20 @@ const findByViewMovieID = async (req, res) => {
       .input('movieId', sql.Int, movieId)
       .input('userId', sql.Int, userId)
       .query(`
+WITH RatingCounts AS (
+    SELECT 
+        MovieID,
+        COUNT(DISTINCT IdRate) AS ReviewCount,
+        SUM(CASE WHEN Rating BETWEEN 9 AND 10 THEN 1 ELSE 0 END) AS Rating_9_10,
+        SUM(CASE WHEN Rating BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS Rating_7_8,
+        SUM(CASE WHEN Rating BETWEEN 5 AND 6 THEN 1 ELSE 0 END) AS Rating_5_6,
+        SUM(CASE WHEN Rating BETWEEN 3 AND 4 THEN 1 ELSE 0 END) AS Rating_3_4,
+        SUM(CASE WHEN Rating BETWEEN 1 AND 2 THEN 1 ELSE 0 END) AS Rating_1_2
+    FROM Rate
+    WHERE MovieID = 1
+    GROUP BY MovieID
+)
+
 SELECT 
     m.MovieID,
     m.Title,
@@ -488,11 +502,10 @@ SELECT
     m.ReleaseDate,
     m.PosterUrl,
     m.TrailerUrl,
-    m.Age, -- Truy cập trực tiếp trường Age từ bảng Movies
-    m.SubTitle, -- Bao gồm SubTitle
-    m.Voiceover, -- Bao gồm Voiceover
-    m.Price, -- Bao gồm Price
-    -- Sử dụng subquery để xử lý việc kết hợp thể loại
+    m.Age,
+    m.SubTitle,
+    m.Voiceover,
+    m.Price,
     (SELECT STRING_AGG(g.GenreName, ', ') 
      FROM MovieGenre mg 
      JOIN Genre g ON mg.IdGenre = g.IdGenre 
@@ -500,15 +513,14 @@ SELECT
     ) AS Genres,
     c.CinemaName,
     c.Address AS CinemaAddress,
-    STRING_AGG(r.Content, ' | ') AS ReviewContents, -- Kết hợp các đánh giá thành chuỗi
-    ROUND(AVG(r.Rating), 2) AS AverageRating, -- Đánh giá trung bình
-    COUNT(r.IdRate) AS ReviewCount, -- Số lượng đánh giá
-    -- Đếm số lượng đánh giá trong từng khoảng giá trị
-    SUM(CASE WHEN r.Rating BETWEEN 9 AND 10 THEN 1 ELSE 0 END) AS Rating_9_10,
-    SUM(CASE WHEN r.Rating BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS Rating_7_8,
-    SUM(CASE WHEN r.Rating BETWEEN 5 AND 6 THEN 1 ELSE 0 END) AS Rating_5_6,
-    SUM(CASE WHEN r.Rating BETWEEN 3 AND 4 THEN 1 ELSE 0 END) AS Rating_3_4,
-    SUM(CASE WHEN r.Rating BETWEEN 1 AND 2 THEN 1 ELSE 0 END) AS Rating_1_2,
+    STRING_AGG(r.Content, ' | ') AS ReviewContents,
+    ROUND(AVG(r.Rating), 2) AS AverageRating,
+    COALESCE(rc.ReviewCount, 0) AS ReviewCount,
+    COALESCE(rc.Rating_9_10, 0) AS Rating_9_10,
+    COALESCE(rc.Rating_7_8, 0) AS Rating_7_8,
+    COALESCE(rc.Rating_5_6, 0) AS Rating_5_6,
+    COALESCE(rc.Rating_3_4, 0) AS Rating_3_4,
+    COALESCE(rc.Rating_1_2, 0) AS Rating_1_2,
     CASE 
       WHEN f.MovieID IS NOT NULL THEN CAST(1 AS BIT) 
       ELSE CAST(0 AS BIT) 
@@ -527,16 +539,19 @@ LEFT JOIN
     Users u ON r.UserId = u.UserId
 LEFT JOIN 
     Favourite f ON m.MovieID = f.MovieID AND f.UserId = @userId
+LEFT JOIN 
+    RatingCounts rc ON m.MovieID = rc.MovieID
 WHERE 
-    m.MovieID = @movieId
+    m.MovieID = @movieId 
 GROUP BY 
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.Age, -- Bao gồm Age trực tiếp từ Movies
-    m.SubTitle, m.Voiceover, -- Bao gồm SubTitle và Voiceover
-    m.Price, -- Bao gồm Price
+    m.PosterUrl, m.TrailerUrl, m.Age, 
+    m.SubTitle, m.Voiceover, 
+    m.Price, 
     c.CinemaName, 
     c.Address, 
-    f.MovieID;
+    f.MovieID, rc.ReviewCount, rc.Rating_9_10, rc.Rating_7_8, rc.Rating_5_6, rc.Rating_3_4, rc.Rating_1_2;
+
 
 
 
@@ -2090,6 +2105,40 @@ const updateSatusBuyTicketInfo = async (req, res) => {
     }
   }
 };
+
+const checkInBuyTicket = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận checkInBuyTicket Flutter!");
+
+    // Lấy BuyTicketId từ query string
+    const { BuyTicketId } = req.query;
+
+    // Kiểm tra nếu BuyTicketId không tồn tại
+    if (!BuyTicketId) {
+      return res.status(400).json({ message: "BuyTicketId is missing in query" });
+    }
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table BuyTicketInfo");
+
+    const result = await pool.request()
+      .input('BuyTicketId', sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
+      .query(`
+        UPDATE BuyTicketInfo
+SET IsCheckIn = 1
+WHERE BuyTicketId = @BuyTicketId;
+      `);
+    res.status(200).json({ message: "successfully" });
+  } catch (error) {
+    console.error("Lỗi khi sửa trạng thái:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
 const findAllBuyTicketByUserId = async (req, res) => {
   let pool;
   try {
@@ -2210,8 +2259,156 @@ const FindOneBuyTicketById = async (req, res) => {
     }
   }
 };
+const insertRate = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận insertRate Flutter!");
 
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
 
+    // Lấy dữ liệu từ request body
+    const { UserId, MovieId, Content, Rating } = req.body;
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Rate");
+
+    // Kiểm tra xem đã có bản ghi với MovieId và UserId hay chưa
+    const checkExistingRate = await pool.request()
+      .input('UserId', sql.Int, UserId)
+      .input('MovieId', sql.Int, MovieId)
+      .query(`
+        SELECT COUNT(*) AS count
+        FROM Rate
+        WHERE MovieID = @MovieId AND UserId = @UserId
+      `);
+
+    // Nếu có bản ghi trùng, trả về lỗi
+    if (checkExistingRate.recordset[0].count > 0) {
+      return res.status(400).json({ message: "User has already rated this movie" });
+    }
+
+    // Nếu chưa có bản ghi trùng, thực hiện insert
+    const result = await pool.request()
+      .input('UserId', sql.Int, UserId) 
+      .input('MovieId', sql.Int, MovieId)
+      .input('Content', sql.NVarChar, Content)
+      .input('Rating', sql.Float, Rating)
+      .query(`
+        INSERT INTO Rate (MovieID, UserId, Content, Rating, RatingDate)
+        VALUES (@MovieId, @UserId, @Content, @Rating, GETDATE())  -- Chèn thời gian hiện tại vào RatingDate
+      `);
+
+    // Trả về kết quả khi insert thành công
+    res.status(200).json({ message: "Rate inserted successfully" });
+
+  } catch (error) {
+    console.error("Lỗi khi thực hiện insertRate:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const getOneRate = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận request getRate!");
+
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ error: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { UserId, MovieId } = req.body;
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Rate");
+
+    // Thực hiện truy vấn để lấy thông tin đánh giá
+    const result = await pool.request()
+      .input('UserId', sql.Int, UserId)
+      .input('MovieId', sql.Int, MovieId)
+      .query(`
+        SELECT *
+        FROM Rate
+        WHERE MovieID = @MovieId AND UserId = @UserId
+      `);
+
+    // Trả về kết quả truy vấn, nếu có dữ liệu
+    if (result.recordset.length > 0) {
+      res.status(200).json(result.recordset[0]);
+    } else {
+      res.status(404).json({}); // Trả về dữ liệu rỗng nếu không có kết quả
+    }
+
+  } catch (error) {
+    console.error("Lỗi khi thực hiện getRate:", error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const getAllRateInfoByMovieID = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận request getRate!");
+
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ error: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { MovieId } = req.body;
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Rate");
+
+    // Thực hiện truy vấn để lấy thông tin đánh giá
+    const result = await pool.request()
+      .input('MovieId', sql.Int, MovieId)
+      .query(`
+      SELECT 
+        u.UserId AS UserID,
+        u.Photo AS Avatar,
+        u.FullName AS Name,
+        r.MovieID,
+        r.Content AS ReviewContent,
+        r.Rating,
+        r.RatingDate
+      FROM 
+        Rate r
+      JOIN 
+        Users u ON r.UserId = u.UserId
+      WHERE 
+        r.MovieID = @MovieId;
+      `);
+
+    // Trả về kết quả truy vấn, nếu có dữ liệu
+    if (result.recordset.length > 0) {
+      res.status(200).json(result.recordset); // Trả về danh sách các đánh giá
+    } else {
+      res.status(404).json({ message: "No reviews found for this movie" }); // Trả về thông báo không tìm thấy dữ liệu
+    }
+
+  } catch (error) {
+    console.error("Lỗi khi thực hiện getRate:", error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
 
 module.exports = {
   getHomepage,
@@ -2257,4 +2454,8 @@ module.exports = {
   findAllBuyTicketByUserId,
   getTop5RateMovie,
   FindOneBuyTicketById,
+  insertRate,
+  getOneRate,
+  getAllRateInfoByMovieID,
+  checkInBuyTicket,
 };
