@@ -849,21 +849,61 @@ ORDER BY
     }
   }
 };
+const bucket = require('../config/firebaseConfig');
 
-const uploadImage = async (req, res) => { 
-  console.log('đã nhận ảnh tử user');
-  
+const { v4: uuidv4 } = require('uuid'); // Để tạo token duy nhất
+
+const uploadImage = async (req, res) => {
   try {
     const file = req.file;
+
     if (!file) {
-      return res.status(400).send('No file uploaded.');
+      return res.status(400).json({ error: 'No file uploaded.' });
     }
-    res.status(200).send('File uploaded successfully.');
+
+    const fileName = `images/${Date.now()}_${file.originalname}`;
+    const fileUpload = bucket.file(fileName);
+
+    const blobStream = fileUpload.createWriteStream({
+      metadata: {
+        contentType: file.mimetype,
+        metadata: {
+          firebaseStorageDownloadTokens: uuidv4(), // Thêm token duy nhất
+        },
+      },
+    });
+
+    blobStream.on('error', (err) => {
+      console.error('Upload error:', err.message);
+      return res.status(500).json({ error: 'Error uploading file.' });
+    });
+
+    blobStream.on('finish', async () => {
+      try {
+        // Lấy metadata của file sau khi upload
+        const metadata = await fileUpload.getMetadata();
+        const downloadToken = metadata[0].metadata.firebaseStorageDownloadTokens;
+
+        // Tạo URL theo định dạng Firebase Storage
+        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
+
+        return res.status(200).json({
+          url: publicUrl,
+        });
+      } catch (error) {
+        console.error('Metadata error:', error.message);
+        return res.status(500).json({ error: 'Error retrieving file metadata.' });
+      }
+    });
+
+    blobStream.end(file.buffer);
   } catch (error) {
-    res.status(500).send('Error uploading file.');
-  }  
-};    
-    
+    console.error('Controller error:', error.message);
+    return res.status(500).json({ error: 'Error uploading file.' });
+  }
+};
+
+
 
 
 
@@ -2145,7 +2185,7 @@ const findAllBuyTicketByUserId = async (req, res) => {
     console.log("Đã nhận findAllBuyTicketByUserId Flutter!");
 
     // Lấy UserId từ query string
-    const { UserId } = req.query;
+    const { UserId } = req.query; 
 
     // Kiểm tra nếu UserId không tồn tại
     if (!UserId) {
@@ -2410,6 +2450,57 @@ const getAllRateInfoByMovieID = async (req, res) => {
   }
 };
 
+const insertMovie = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận insertMovie Flutter!");
+
+    // Lấy các tham số từ body của request
+    const {
+      CinemaID, Title, Description, Duration, ReleaseDate, PosterUrl, 
+      TrailerUrl, Age, SubTitle, Voiceover, StatusMovie, Price, 
+      ActorsData, GenreIds
+    } = req.body;
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server");
+
+    // Thực hiện truy vấn gọi thủ tục sp_InsertMovie
+    const result = await pool.request()
+      .input('CinemaID', sql.Int, CinemaID)
+      .input('Title', sql.NVarChar, Title)
+      .input('Description', sql.NVarChar, Description)
+      .input('Duration', sql.Int, Duration)
+      .input('ReleaseDate', sql.Date, ReleaseDate)
+      .input('PosterUrl', sql.NVarChar, PosterUrl)
+      .input('TrailerUrl', sql.NVarChar, TrailerUrl)
+      .input('Age', sql.NVarChar, Age)
+      .input('SubTitle', sql.Int, SubTitle)
+      .input('Voiceover', sql.Int, Voiceover)
+      .input('StatusMovie', sql.NVarChar, StatusMovie)
+      .input('Price', sql.Float, Price)
+      .input('ActorsData', sql.NVarChar, JSON.stringify(ActorsData))  // Chuyển đối tượng JSON thành chuỗi
+      .input('GenreIds', sql.NVarChar, JSON.stringify(GenreIds))      // Chuyển đối tượng JSON thành chuỗi
+      .query(`
+        EXEC sp_InsertMovie
+          @CinemaID, @Title, @Description, @Duration, @ReleaseDate, 
+          @PosterUrl, @TrailerUrl, @Age, @SubTitle, @Voiceover, 
+          @StatusMovie, @Price, @ActorsData, @GenreIds
+      `); 
+
+    // Trả về kết quả truy vấn
+    res.status(200).json({ message: "Movie inserted successfully", result: result.recordset });
+  } catch (error) {
+    console.error("Lỗi khi chèn dữ liệu:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
 module.exports = {
   getHomepage,
   findByViewID,
@@ -2458,4 +2549,5 @@ module.exports = {
   getOneRate,
   getAllRateInfoByMovieID,
   checkInBuyTicket,
+  insertMovie,
 };
