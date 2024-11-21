@@ -61,6 +61,7 @@ const { getHomepage,
   checkInBuyTicket,
   updateInfoUser,
   changePassword,
+  changePasswordForEmail,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -119,6 +120,8 @@ route.post('/getRate', getOneRate); //
 route.post('/getAllRateInfoByMovieID', getAllRateInfoByMovieID); // 
 route.post('/updateInfoUser', updateInfoUser); // 
 route.post('/changePassword', changePassword); // 
+route.post('/changePasswordForEmail', changePasswordForEmail); // 
+
 
 
 

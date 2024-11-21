@@ -5,7 +5,8 @@ require("dotenv").config();
 const crypto = require('crypto');
 const momoConfig = require('../config/momo');
 const axios = require('axios');
- 
+// const bcrypt = require("bcrypt");
+
 // Hàm xử lý cho route GET /
 const getHomepage = async (req, res) => {
   let pool;
@@ -31,7 +32,7 @@ const getHomepage = async (req, res) => {
       await pool.close(); // Đóng pool
     }
   }
-};
+}; 
 
 // Hàm xử lý cho route POST /findByViewID
 const findByViewID = async (req, res) => {
@@ -851,19 +852,7 @@ ORDER BY
   }
 };
 
-const uploadImage = async (req, res) => { 
-  console.log('đã nhận ảnh tử user');
-  
-  try {
-    const file = req.file;
-    if (!file) {
-      return res.status(400).send('No file uploaded.');
-    }
-    res.status(200).send('File uploaded successfully.');
-  } catch (error) {
-    res.status(500).send('Error uploading file.');
-  }  
-};    
+   
     
 
 
@@ -2411,6 +2400,20 @@ const getAllRateInfoByMovieID = async (req, res) => {
   }
 };
 
+const uploadImage = async (req, res) => { 
+  console.log('đã nhận ảnh tử user');
+  
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).send('No file uploaded.');
+    }
+    res.status(200).send('File uploaded successfully.');
+  } catch (error) {
+    res.status(500).send('Error uploading file.');
+  }  
+}; 
+
 const updateInfoUser = async (req, res) => {
   let pool;
   try {
@@ -2517,6 +2520,58 @@ const changePassword = async (req, res) => {
     }
   }
 };
+ 
+
+
+const changePasswordForEmail = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận yêu cầu thay đổi mật khẩu từ Flutter!");
+
+    // Kiểm tra request body
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { Password, Email } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!Email || !Password) {
+      return res.status(400).json({ message: "Email and Password are required" });
+    }
+
+    // Kết nối SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối với SQL Server Table Users");
+
+    // Truy vấn để thay đổi mật khẩu dựa trên Email
+    const result = await pool.request()
+      .input("Email", sql.NVarChar(255), Email)
+      .input("Password", sql.NVarChar(255), Password) // Không mã hóa mật khẩu
+      .query(`
+        UPDATE Users
+        SET Password = @Password
+        WHERE Email = @Email
+      `);
+
+    // Kiểm tra kết quả
+    if (result.rowsAffected[0] > 0) {
+      res.status(200).json({ message: "Password updated successfully" });
+      console.log("Mật khẩu đã được thay đổi thành công:", result);
+    } else {
+      res.status(404).json({ message: "Email not found or no changes made" });
+    }
+  } catch (error) {
+    console.error("Lỗi khi thay đổi mật khẩu:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  } finally {
+    // Đảm bảo đóng kết nối
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
 
 
 
@@ -2567,7 +2622,9 @@ module.exports = {
   insertRate,
   getOneRate,
   getAllRateInfoByMovieID,
-  checkInBuyTicket,
+  checkInBuyTicket, 
   updateInfoUser,
   changePassword,
+  changePasswordForEmail,
+
 };
