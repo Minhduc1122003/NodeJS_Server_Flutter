@@ -2,10 +2,19 @@ const connection = require("../config/database");
 const sql = require("mssql");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
-const crypto = require('crypto');
-const momoConfig = require('../config/momo');
-const axios = require('axios');
- 
+const crypto = require("crypto");
+const momoConfig = require("../config/momo");
+const axios = require("axios");
+const poolPromise = new sql.ConnectionPool(connection)
+  .connect()
+  .then((pool) => {
+    console.log("Connected to SQL Server");
+    return pool;
+  })
+  .catch((err) => {
+    console.error("Database Connection Failed! Bad Config: ", err);
+    throw err;
+  });
 // Hàm xử lý cho route GET /
 const getHomepage = async (req, res) => {
   let pool;
@@ -18,13 +27,15 @@ const getHomepage = async (req, res) => {
     let result = await pool.request().query("SELECT * FROM accounts");
 
     // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.send(JSON.stringify(result.recordset, null, 2)); // Indent with 2 spaces for readability
 
     console.log("Clients have connected");
   } catch (error) {
     console.error("Error fetching accounts:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối nếu pool đã được khởi tạo
     if (pool) {
@@ -40,8 +51,8 @@ const findByViewID = async (req, res) => {
   // Kiểm tra xem req.body có định nghĩa không
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
-  } 
- 
+  }
+
   const { username, password } = req.body || {};
   console.log("Đã nhận dữ liệu từ Flutter!");
   console.log(`Username: ${username}, Password: ${password}`);
@@ -53,22 +64,28 @@ const findByViewID = async (req, res) => {
     console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để tìm tài khoản
-    let result = await pool.request()
-      .input('username', sql.VarChar, username)
-      .input('password', sql.VarChar, password)
-      .query("SELECT * FROM Users WHERE username = @username AND password = @password");
+    let result = await pool
+      .request()
+      .input("username", sql.VarChar, username)
+      .input("password", sql.VarChar, password)
+      .query(
+        "SELECT * FROM Users WHERE username = @username AND password = @password"
+      );
 
     // Kiểm tra xem có tài khoản nào không
     if (result.recordset.length > 0) {
-      res.status(200).json({ message: "Login successful", user: result.recordset[0] });
+      res
+        .status(200)
+        .json({ message: "Login successful", user: result.recordset[0] });
     } else {
       res.status(401).json({ message: "Invalid username or password" });
       console.log("khong tim thay du lieu");
-
     }
   } catch (error) {
     console.error("Error fetching accounts:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối
     if (pool) {
@@ -84,9 +101,9 @@ const findByViewIDUser = async (req, res) => {
   // Kiểm tra xem req.body có định nghĩa không
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
-  } 
- 
-  const {UserID} = req.body || {};
+  }
+
+  const { UserID } = req.body || {};
   console.log("Đã nhận dữ liệu từ Flutter!");
   console.log(`UserID: ${UserID}`);
 
@@ -97,21 +114,25 @@ const findByViewIDUser = async (req, res) => {
     console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để tìm tài khoản
-    let result = await pool.request()
-      .input('UserID', UserID)
-      .query("SELECT * FROM Users WHERE UserID = @UserID ");   
+    let result = await pool
+      .request()
+      .input("UserID", UserID)
+      .query("SELECT * FROM Users WHERE UserID = @UserID ");
 
     // Kiểm tra xem có tài khoản nào không
     if (result.recordset.length > 0) {
-      res.status(200).json({ message: "Select successfully", user: result.recordset[0] });
+      res
+        .status(200)
+        .json({ message: "Select successfully", user: result.recordset[0] });
     } else {
       res.status(401).json({ message: "khong tim thay nguoi dung" });
-      console.log("khong tim thay du lieu");  
-
+      console.log("khong tim thay du lieu");
     }
   } catch (error) {
     console.error("Error fetching accounts:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối
     if (pool) {
@@ -134,7 +155,7 @@ const sendEmail = async (req, res) => {
   console.log(`Recipient:${recipient}`);
   // Cấu hình transporter
   let transporter = nodemailer.createTransport({
-    service: 'gmail', // Thay đổi theo nhà cung cấp email bạn sử dụng
+    service: "gmail", // Thay đổi theo nhà cung cấp email bạn sử dụng
     auth: {
       user: process.env.MY_EMAIL, // Thay đổi thành email của bạn
       pass: process.env.MY_PASSEMAIL, // Thay đổi thành mật khẩu email của bạn
@@ -145,7 +166,7 @@ const sendEmail = async (req, res) => {
   let mailOptions = {
     from: process.env.MY_EMAIL, // Địa chỉ email của bạn
     to: recipient, // Địa chỉ email người nhận
-    subject: 'Đăng ký tài khoản PANTHERs CINEMA', // Tiêu đề email
+    subject: "Đăng ký tài khoản PANTHERs CINEMA", // Tiêu đề email
     html: `
       <html>
       <head>
@@ -219,21 +240,20 @@ const sendEmail = async (req, res) => {
     `, // Nội dung email với định dạng HTML
   };
 
-
   try {
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: "Email sent successfully", code: code });
     console.log("Email sent successfully");
   } catch (error) {
     console.error("Error sending email:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
 
 // hàm tạo tài khoản
 const createAccount = async (req, res) => {
-
-  
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
   }
@@ -245,28 +265,26 @@ const createAccount = async (req, res) => {
   try {
     pool = await sql.connect(connection);
     console.log("Connected to database");
-    
 
     const currentDate = new Date().toISOString();
 
-    let result = await pool.request()
-  .input('username', sql.VarChar(50), username)
-  .input('password', sql.VarChar(255), password) // Password nên là 255 để phù hợp với bảng
-  .input('email', sql.VarChar(155), email)
-  .input('fullname', sql.NVarChar(155), fullname)
-  .input('phoneNumber', sql.VarChar(20), phoneNumberStr) // Chỉnh lại kiểu dữ liệu phù hợp
-  .input('photo', sql.VarChar(50), null) 
-  .input('role', sql.Int, 0) // Giá trị mặc định cho khách hàng
-  .input('createDate', sql.DateTime, currentDate)
-  .input('status', sql.NVarChar(20), 'Đang hoạt động') // Default status
-  .input('isDelete', sql.Bit, 0) // 0: false (mặc định)
-
-  .query(`
+    let result = await pool
+      .request()
+      .input("username", sql.VarChar(50), username)
+      .input("password", sql.VarChar(255), password) // Password nên là 255 để phù hợp với bảng
+      .input("email", sql.VarChar(155), email)
+      .input("fullname", sql.NVarChar(155), fullname)
+      .input("phoneNumber", sql.VarChar(20), phoneNumberStr) // Chỉnh lại kiểu dữ liệu phù hợp
+      .input("photo", sql.VarChar(50), null)
+      .input("role", sql.Int, 0) // Giá trị mặc định cho khách hàng
+      .input("createDate", sql.DateTime, currentDate)
+      .input("status", sql.NVarChar(20), "Đang hoạt động") // Default status
+      .input("isDelete", sql.Bit, 0) // 0: false (mặc định)
+      .query(`
     INSERT INTO Users (UserName, Password, Email, FullName, PhoneNumber, Photo, Role, CreateDate, Status, IsDelete)
     VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, @role, @createDate, @status, @isDelete)
   `);
 
- 
     if (result.rowsAffected[0] > 0) {
       res.status(200).json({ message: "Account created successfully" });
     } else {
@@ -274,7 +292,9 @@ const createAccount = async (req, res) => {
     }
   } catch (error) {
     console.error("Error creating account:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     if (pool) {
       await pool.close();
@@ -288,7 +308,9 @@ const getAllUserData = async (req, res) => {
 
   // Kiểm tra xem req.body có tồn tại không
   if (!req.body || !req.body.username) {
-    return res.status(400).json({ message: "Request body or username is missing" });
+    return res
+      .status(400)
+      .json({ message: "Request body or username is missing" });
   }
 
   const username = req.body.username;
@@ -300,18 +322,18 @@ const getAllUserData = async (req, res) => {
     pool = await sql.connect(connection);
 
     // Thực hiện truy vấn để lấy tất cả người dùng trừ user có `username` đã cho
-    let result = await pool.request()
-      .input('username', sql.VarChar, username)
+    let result = await pool.request().input("username", sql.VarChar, username)
       .query(`
         SELECT * FROM Users WHERE UserName != @username
       `);
-
 
     // Trả kết quả dưới dạng JSON
     res.status(200).json(result.recordset);
   } catch (error) {
     console.error("Error fetching user data:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối
     if (pool) {
@@ -320,15 +342,14 @@ const getAllUserData = async (req, res) => {
   }
 };
 
-
 // hàm sinh code random
 function generateCode(length = 8) {
-  return crypto.randomBytes(length)
-    .toString('hex')
+  return crypto
+    .randomBytes(length)
+    .toString("hex")
     .slice(0, length)
     .toUpperCase(); // Đổi thành chữ hoa nếu cần
 }
-
 
 // Hàm xử lý cho route GET /movies
 const getMoviesDangChieu = async (req, res) => {
@@ -378,12 +399,13 @@ GROUP BY
     `);
 
     // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.send(JSON.stringify(result.recordset, null, 2)); // Indent with 2 spaces for readability
-
   } catch (error) {
     console.error("Error fetching movies:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message }); 
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối nếu pool đã được khởi tạo
     if (pool) {
@@ -442,12 +464,13 @@ GROUP BY
     `);
 
     // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.send(JSON.stringify(result.recordset, null, 2)); // Indent with 2 spaces for readability
-
   } catch (error) {
     console.error("Error fetching movies:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối nếu pool đã được khởi tạo
     if (pool) {
@@ -455,7 +478,6 @@ GROUP BY
     }
   }
 };
-
 
 const findByViewMovieID = async (req, res) => {
   console.log("findByViewMovieID");
@@ -476,10 +498,10 @@ const findByViewMovieID = async (req, res) => {
     pool = await sql.connect(connection);
 
     // Thực hiện truy vấn để tìm thông tin phim dựa trên MovieID và kiểm tra xem có trong Favourite không
-    let result = await pool.request()
-      .input('movieId', sql.Int, movieId)
-      .input('userId', sql.Int, userId)
-      .query(`
+    let result = await pool
+      .request()
+      .input("movieId", sql.Int, movieId)
+      .input("userId", sql.Int, userId).query(`
 WITH RatingCounts AS (
     SELECT 
         MovieID,
@@ -559,13 +581,17 @@ GROUP BY
 
     // Kiểm tra xem có dữ liệu phim nào không
     if (result.recordset.length > 0) {
-      res.status(200).json({ message: "Movie found", movie: result.recordset[0] });
+      res
+        .status(200)
+        .json({ message: "Movie found", movie: result.recordset[0] });
     } else {
       res.status(404).json({ message: "Movie not found" });
     }
   } catch (error) {
     console.error("Error fetching movie:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối
     if (pool) {
@@ -593,27 +619,27 @@ const addFavourire = async (req, res) => {
     console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để chèn dữ liệu vào bảng Favourite
-    await pool.request()
-      .input('movieId', sql.Int, movieId)
-      .input('userId', sql.Int, userId)
-      .query(`
+    await pool
+      .request()
+      .input("movieId", sql.Int, movieId)
+      .input("userId", sql.Int, userId).query(`
         INSERT INTO Favourite (MovieID, UserId) 
         VALUES (@movieId, @userId);
       `);
 
     res.status(200).json({ message: "Favourite added successfully" });
     console.log("Favourite added successfully");
-
   } catch (error) {
     console.error("Error adding favourite:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     if (pool) {
       await pool.close();
     }
   }
 };
-
 
 const removeFavourire = async (req, res) => {
   console.log("removeFavourire");
@@ -633,10 +659,10 @@ const removeFavourire = async (req, res) => {
     pool = await sql.connect(connection);
 
     // Thực hiện truy vấn để xóa dữ liệu từ bảng Favourite
-    const result = await pool.request()
-      .input('movieId', sql.Int, movieId)
-      .input('userId', sql.Int, userId)
-      .query(`
+    const result = await pool
+      .request()
+      .input("movieId", sql.Int, movieId)
+      .input("userId", sql.Int, userId).query(`
         DELETE FROM Favourite
         WHERE MovieID = @movieId AND UserId = @userId;
       `);
@@ -651,10 +677,11 @@ const removeFavourire = async (req, res) => {
       res.status(404).json({ message: "Favourite not found" });
       console.log("Favourite not found");
     }
-
   } catch (error) {
     console.error("Error removing favourite:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối
     if (pool) {
@@ -679,11 +706,11 @@ const getShowtime = async (req, res) => {
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
 
-    const result = await pool.request()
-      .input('InputDate', date)
-      .input('InputTime', time) 
-      .input('MovieID', movieId)
-      .query(`
+    const result = await pool
+      .request()
+      .input("InputDate", date)
+      .input("InputTime", time)
+      .input("MovieID", movieId).query(`
         SELECT 
     S.ShowtimeID AS ShowTimeID,
     M.Title AS MovieTitle,
@@ -705,9 +732,8 @@ ORDER BY
       `);
 
     // Gửi dữ liệu theo định dạng JSON
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
-
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -717,7 +743,6 @@ ORDER BY
     }
   }
 };
-
 
 const getChair = async (req, res) => {
   console.log("getChair from server");
@@ -737,9 +762,10 @@ const getChair = async (req, res) => {
     pool = await sql.connect(connection);
 
     // Thực hiện truy vấn để lấy danh sách ghế
-    const result = await pool.request()
-      .input('showTimeID', sql.Int, showTimeID)
-      .input('cinemaRoomID', sql.Int, cinemaRoomID) // Thêm CinemaRoomID vào truy vấn
+    const result = await pool
+      .request()
+      .input("showTimeID", sql.Int, showTimeID)
+      .input("cinemaRoomID", sql.Int, cinemaRoomID) // Thêm CinemaRoomID vào truy vấn
       .query(`
         SELECT 
            s.SeatID,
@@ -755,15 +781,16 @@ const getChair = async (req, res) => {
           s.CinemaRoomID = @cinemaRoomID -- Lọc theo CinemaRoomID
         ORDER BY  
           s.SeatID;
-      `); 
+      `);
 
     // Trả về phản hồi thành công với danh sách ghế
     res.status(200).json(result.recordset);
     console.log("Danh sách ghế đã được trả về thành công");
-
   } catch (error) {
     console.error("Error fetching chairs:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối
     if (pool) {
@@ -772,33 +799,41 @@ const getChair = async (req, res) => {
   }
 };
 
-
 const insertBuyTicket = async (req, res) => {
   let pool;
   try {
     // Lấy dữ liệu từ request body
-    const { BuyTicketId, UserId, MovieID,TotalPriceAll, ShowtimeID, SeatIDs, ComboIDs} = req.body;
-
+    const {
+      BuyTicketId,
+      UserId,
+      MovieID,
+      TotalPriceAll,
+      ShowtimeID,
+      SeatIDs,
+      ComboIDs,
+    } = req.body;
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection); 
+    pool = await sql.connect(connection);
     console.log("Connecting to SQL Server");
 
     // Prepare and execute the stored procedure with dynamic values
-    const result = await pool.request()
-      .input('BuyTicketId', BuyTicketId)
-      .input('UserId', UserId)
-      .input('MovieID', MovieID)
-      .input('TotalPriceAll', TotalPriceAll)
-      .input('ShowtimeID', ShowtimeID)
-      .input('SeatIDs', SeatIDs)
-      .input('ComboIDs', ComboIDs)
-  
-      .query(`EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID,@TotalPriceAll, @ShowtimeID, @SeatIDs, @ComboIDs`);
-    // Gửi kết quả trả về
-    res.setHeader('Content-Type', 'application/json');
-    res.json(result.recordset);
+    const result = await pool
+      .request()
+      .input("BuyTicketId", BuyTicketId)
+      .input("UserId", UserId)
+      .input("MovieID", MovieID)
+      .input("TotalPriceAll", TotalPriceAll)
+      .input("ShowtimeID", ShowtimeID)
+      .input("SeatIDs", SeatIDs)
+      .input("ComboIDs", ComboIDs)
 
+      .query(
+        `EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID,@TotalPriceAll, @ShowtimeID, @SeatIDs, @ComboIDs`
+      );
+    // Gửi kết quả trả về
+    res.setHeader("Content-Type", "application/json");
+    res.json(result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -809,18 +844,13 @@ const insertBuyTicket = async (req, res) => {
   }
 };
 
-
-
 const getShowtimeListForAdmin = async (req, res) => {
   let pool;
   try {
-
-
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table getShowtimeListForAdmin");
-    const result = await pool.request()
-      .query(`
+    const result = await pool.request().query(`
        SELECT 
     M.Title AS MovieName,
     S.ShowtimeDate,
@@ -838,7 +868,7 @@ ORDER BY
       `);
 
     // Gửi dữ liệu theo định dạng JSON
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
@@ -849,16 +879,16 @@ ORDER BY
     }
   }
 };
-const bucket = require('../config/firebaseConfig');
+const bucket = require("../config/firebaseConfig");
 
-const { v4: uuidv4 } = require('uuid'); // Để tạo token duy nhất
+const { v4: uuidv4 } = require("uuid"); // Để tạo token duy nhất
 
 const uploadImage = async (req, res) => {
   try {
     const file = req.file;
 
     if (!file) {
-      return res.status(400).json({ error: 'No file uploaded.' });
+      return res.status(400).json({ error: "No file uploaded." });
     }
 
     const fileName = `images/${Date.now()}_${file.originalname}`;
@@ -873,58 +903,49 @@ const uploadImage = async (req, res) => {
       },
     });
 
-    blobStream.on('error', (err) => {
-      console.error('Upload error:', err.message);
-      return res.status(500).json({ error: 'Error uploading file.' });
+    blobStream.on("error", (err) => {
+      console.error("Upload error:", err.message);
+      return res.status(500).json({ error: "Error uploading file." });
     });
 
-    blobStream.on('finish', async () => {
+    blobStream.on("finish", async () => {
       try {
-        // Lấy metadata của file sau khi upload
         const metadata = await fileUpload.getMetadata();
         const downloadToken = metadata[0].metadata.firebaseStorageDownloadTokens;
 
-        // Tạo URL theo định dạng Firebase Storage
-        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
+        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${
+          bucket.name
+        }/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
 
-        return res.status(200).json({
-          url: publicUrl,
-        });
+        return res.status(200).json({ url: publicUrl });
       } catch (error) {
-        console.error('Metadata error:', error.message);
-        return res.status(500).json({ error: 'Error retrieving file metadata.' });
+        console.error("Metadata error:", error.message);
+        return res.status(500).json({ error: "Error retrieving file metadata." });
       }
     });
 
     blobStream.end(file.buffer);
   } catch (error) {
-    console.error('Controller error:', error.message);
-    return res.status(500).json({ error: 'Error uploading file.' });
+    console.error("Controller error:", error.message);
+    return res.status(500).json({ error: "Error uploading file." });
   }
 };
-
-
-
-
-
 
 // ----------------- SOCKET IO -----------------------
 const getConversations = async (req, res) => {
   const { userId } = req.body; // Lấy userId từ body của request
 
   // Kiểm tra giá trị userId
-  if (typeof userId !== 'number') {
-    return res.status(400).send('Invalid user ID');
+  if (typeof userId !== "number") {
+    return res.status(400).send("Invalid user ID");
   }
 
-  let pool; 
+  let pool;
   try {
     pool = await sql.connect(connection);
 
     // Truy vấn dữ liệu từ bảng Conversations và lấy thông tin tin nhắn mới nhất và hình ảnh của người còn lại
-    const result = await pool.request()
-      .input('UserId', sql.Int, userId)
-      .query(`
+    const result = await pool.request().input("UserId", sql.Int, userId).query(`
   SELECT 
     c.Id, 
     c.User1Id, 
@@ -961,16 +982,14 @@ const getConversations = async (req, res) => {
     // Trả kết quả cho client
     res.json(result.recordset);
   } catch (err) {
-    console.error('Failed to get conversations:', err);
-    res.status(500).send('Server Error');
+    console.error("Failed to get conversations:", err);
+    res.status(500).send("Server Error");
   } finally {
     if (pool) {
       await pool.close(); // Đóng pool
     }
   }
 };
-
-
 
 const createFilm = async (req, res) => {
   let pool;
@@ -983,27 +1002,29 @@ const createFilm = async (req, res) => {
     const totalPrice = parseFloat(req.body.totalPrice); // FLOAT
     const showtimeId = parseInt(req.body.showtimeId, 10); // INT
     const seatIDs = req.body.seatIDs; // Giả sử seatIDs là mảng
-    const seatIDsString = Array.isArray(seatIDs) ? seatIDs.join(',') : seatIDs; // Chuyển thành chuỗi
-    
+    const seatIDsString = Array.isArray(seatIDs) ? seatIDs.join(",") : seatIDs; // Chuyển thành chuỗi
+
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Showtime");
 
     // Prepare and execute the stored procedure with dynamic values
-    const result = await pool.request()
-    .input('BuyTicketId', buyTicketId)
-    .input('UserId', userId)
-    .input('MovieID', movieId)
-      .input('Quantity', quantity)
-      .input('TotalPrice', totalPrice)
-      .input('ShowtimeID', showtimeId)
-      .input('SeatIDs', sql.NVarChar(sql.MAX), seatIDsString) // Sử dụng seatIDsString
-      .query(`EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID, @Quantity, @TotalPrice, @ShowtimeID, @SeatIDs;`);
+    const result = await pool
+      .request()
+      .input("BuyTicketId", buyTicketId)
+      .input("UserId", userId)
+      .input("MovieID", movieId)
+      .input("Quantity", quantity)
+      .input("TotalPrice", totalPrice)
+      .input("ShowtimeID", showtimeId)
+      .input("SeatIDs", sql.NVarChar(sql.MAX), seatIDsString) // Sử dụng seatIDsString
+      .query(
+        `EXEC InsertBuyTicket @BuyTicketId, @UserId, @MovieID, @Quantity, @TotalPrice, @ShowtimeID, @SeatIDs;`
+      );
 
     // Gửi dữ liệu theo định dạng JSON
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
-
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1014,23 +1035,20 @@ const createFilm = async (req, res) => {
   }
 };
 
-
 const getUserListForAdmin = async (req, res) => {
   let pool;
   try {
-
     console.log("Đã nhận getUserListForAdmin Flutter!");
 
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table getUserListForAdmin");
-    const result = await pool.request()
-      .query(`
+    const result = await pool.request().query(`
       select * from Users where Role = 1  
       `);
 
     // Gửi dữ liệu theo định dạng JSON
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
@@ -1056,7 +1074,13 @@ const createShifts = async (req, res) => {
     const { ShiftName, StartTime, EndTime, IsCrossDay, Status } = req.body;
 
     // Kiểm tra các trường bắt buộc
-    if (!ShiftName || !StartTime || !EndTime || IsCrossDay === undefined || !Status) {
+    if (
+      !ShiftName ||
+      !StartTime ||
+      !EndTime ||
+      IsCrossDay === undefined ||
+      !Status
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -1069,25 +1093,35 @@ const createShifts = async (req, res) => {
     console.log("Thời gian kết thúc (formatted):", endTimeFormatted);
 
     // Kiểm tra định dạng thời gian
-    if (!isValidTimeFormat(startTimeFormatted) || !isValidTimeFormat(endTimeFormatted)) {
-      return res.status(400).json({ message: "Invalid time format for StartTime or EndTime" });
+    if (
+      !isValidTimeFormat(startTimeFormatted) ||
+      !isValidTimeFormat(endTimeFormatted)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid time format for StartTime or EndTime" });
     }
 
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Shifts");
 
-    const result = await pool.request()
-      .input('ShiftName', ShiftName)
-      .input('StartTime', startTimeFormatted)
-      .input('EndTime', endTimeFormatted)
-      .input('IsCrossDay', IsCrossDay)
-      .input('Status', Status) 
-      .query(`
+    const result = await pool
+      .request()
+      .input("ShiftName", ShiftName)
+      .input("StartTime", startTimeFormatted)
+      .input("EndTime", endTimeFormatted)
+      .input("IsCrossDay", IsCrossDay)
+      .input("Status", Status).query(`
         INSERT INTO Shifts (ShiftName, StartTime, EndTime, IsCrossDay, Status)
         VALUES (@ShiftName, @StartTime, @EndTime, @IsCrossDay, @Status)
       `);
 
-    res.status(201).json({ message: "Shift created successfully", shiftId: result.rowsAffected[0] });
+    res
+      .status(201)
+      .json({
+        message: "Shift created successfully",
+        shiftId: result.rowsAffected[0],
+      });
   } catch (error) {
     console.error("Lỗi khi tạo ca làm:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1104,7 +1138,7 @@ const _formatTime = (time) => {
     return `${time}:00`; // Chuyển thành 'HH:mm:ss'
   }
   return time; // Trả về thời gian không thay đổi nếu không khớp
-}; 
+};
 
 const isValidTimeFormat = (time) => {
   // Kiểm tra xem thời gian có định dạng hợp lệ 'HH:mm:ss'
@@ -1126,29 +1160,46 @@ const createLocation = async (req, res) => {
     const { LocationName, Latitude, Longitude, Radius, ShiftId } = req.body;
 
     // Kiểm tra các trường bắt buộc
-    if (!LocationName || !Latitude || !Longitude || Radius === undefined || !ShiftId) {
+    if (
+      !LocationName ||
+      !Latitude ||
+      !Longitude ||
+      Radius === undefined ||
+      !ShiftId
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
- 
+
     // In ra để kiểm tra dữ liệu
-     
-    console.log("Dữ liệu vị trí:", { LocationName, Latitude, Longitude, Radius, ShiftId });
- 
+
+    console.log("Dữ liệu vị trí:", {
+      LocationName,
+      Latitude,
+      Longitude,
+      Radius,
+      ShiftId,
+    });
+
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Locations");
 
-    const result = await pool.request()
-      .input('LocationName', LocationName)
-      .input('Latitude',Latitude) // Convert to float
-      .input('Longitude', Longitude) // Convert to float
-      .input('Radius', Radius)
-      .input('ShiftId', ShiftId)
-      .query(`
+    const result = await pool
+      .request()
+      .input("LocationName", LocationName)
+      .input("Latitude", Latitude) // Convert to float
+      .input("Longitude", Longitude) // Convert to float
+      .input("Radius", Radius)
+      .input("ShiftId", ShiftId).query(`
         INSERT INTO Locations (LocationName, Latitude, Longitude, Radius, ShiftId)
         VALUES (@LocationName, @Latitude, @Longitude, @Radius, @ShiftId)
       `);
 
-    res.status(201).json({ message: "Location created successfully", locationId: result.rowsAffected[0] });
+    res
+      .status(201)
+      .json({
+        message: "Location created successfully",
+        locationId: result.rowsAffected[0],
+      });
   } catch (error) {
     console.error("Lỗi khi tạo vị trí:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1176,32 +1227,43 @@ const createWorkSchedules = async (req, res) => {
 
     // Chuyển đổi định dạng ngày từ dd/MM/yyyy sang yyyy-MM-dd
     const parseDate = (dateStr) => {
-      const [day, month, year] = dateStr.split('/');
+      const [day, month, year] = dateStr.split("/");
       return `${year}-${month}-${day}`;
     };
 
     const formattedStartDate = parseDate(StartDate);
     const formattedEndDate = parseDate(EndDate);
- // Loại bỏ dấu [] ở DaysOfWeek
- const formattedDaysOfWeek = DaysOfWeek.replace(/[\[\]]/g, '');
+    // Loại bỏ dấu [] ở DaysOfWeek
+    const formattedDaysOfWeek = DaysOfWeek.replace(/[\[\]]/g, "");
 
- console.log("Dữ liệu lịch làm việc:", { UserId, ShiftId, StartDate: formattedStartDate, EndDate: formattedEndDate, DaysOfWeek: formattedDaysOfWeek });
+    console.log("Dữ liệu lịch làm việc:", {
+      UserId,
+      ShiftId,
+      StartDate: formattedStartDate,
+      EndDate: formattedEndDate,
+      DaysOfWeek: formattedDaysOfWeek,
+    });
 
- pool = await sql.connect(connection);
- console.log("Connecting to SQL Server Table WorkSchedules");
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table WorkSchedules");
 
- const result = await pool.request()
-   .input('UserId', sql.Int, UserId)
-   .input('ShiftId', sql.Int, ShiftId)
-   .input('StartDate', sql.Date, formattedStartDate)
-   .input('EndDate', sql.Date, formattedEndDate)
-   .input('DaysOfWeek', sql.NVarChar(70), formattedDaysOfWeek)
-      .query(`
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, UserId)
+      .input("ShiftId", sql.Int, ShiftId)
+      .input("StartDate", sql.Date, formattedStartDate)
+      .input("EndDate", sql.Date, formattedEndDate)
+      .input("DaysOfWeek", sql.NVarChar(70), formattedDaysOfWeek).query(`
         INSERT INTO WorkSchedules (UserId, ShiftId, StartDate, EndDate, DaysOfWeek)
         VALUES (@UserId, @ShiftId, @StartDate, @EndDate, @DaysOfWeek)
       `);
 
-    res.status(201).json({ message: "Work schedule created successfully", scheduleId: result.rowsAffected[0] });
+    res
+      .status(201)
+      .json({
+        message: "Work schedule created successfully",
+        scheduleId: result.rowsAffected[0],
+      });
   } catch (error) {
     console.error("Lỗi khi tạo lịch làm việc:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1212,23 +1274,20 @@ const createWorkSchedules = async (req, res) => {
   }
 };
 
-
 const getAllListShift = async (req, res) => {
   let pool;
   try {
-
     console.log("Đã nhận getAllListShift Flutter!");
 
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table getUserListForAdmin");
-    const result = await pool.request()
-      .query(`
+    const result = await pool.request().query(`
       SELECT * FROM Shifts 
       `);
 
     // Gửi dữ liệu theo định dạng JSON
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
@@ -1243,14 +1302,12 @@ const getAllListShift = async (req, res) => {
 const getAllListLocation = async (req, res) => {
   let pool;
   try {
-
     console.log("Đã nhận getAllListLocation Flutter!");
 
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table getUserListForAdmin");
-    const result = await pool.request()
-      .query(`
+    const result = await pool.request().query(`
 
 SELECT 
     l.LocationId,
@@ -1272,7 +1329,7 @@ JOIN
       `);
 
     // Gửi dữ liệu theo định dạng JSON
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
@@ -1297,12 +1354,12 @@ const getAllWorkSchedulesByID = async (req, res) => {
 
     // Kết nối đến SQL Server
     pool = await sql.connect(connection);
-   
 
-    const result = await pool.request()
-      .input('userId', sql.Int, userId) // Sử dụng giá trị số nguyên cho userId
-      .input('startDate', sql.Date, startDate) // Sử dụng giá trị chuỗi cho startDate
-      .input('endDate', sql.Date, endDate) // Sử dụng giá trị chuỗi cho endDate
+    const result = await pool
+      .request()
+      .input("userId", sql.Int, userId) // Sử dụng giá trị số nguyên cho userId
+      .input("startDate", sql.Date, startDate) // Sử dụng giá trị chuỗi cho startDate
+      .input("endDate", sql.Date, endDate) // Sử dụng giá trị chuỗi cho endDate
       .query(`
         SELECT *
         FROM WorkSchedules
@@ -1312,9 +1369,8 @@ const getAllWorkSchedulesByID = async (req, res) => {
       `);
 
     // Gửi dữ liệu theo định dạng JSON
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
-
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch làm việc:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1346,11 +1402,12 @@ const getShiftForAttendance = async (req, res) => {
     console.log("EndDate:", endDate);
     console.log("DaysOfWeek:", daysOfWeek);
 
-    const result = await pool.request()
-      .input('userId', sql.Int, userId) // Sử dụng giá trị số nguyên cho userId
-      .input('startDate', sql.Date, startDate) // Sử dụng giá trị chuỗi cho startDate
-      .input('endDate', sql.Date, endDate) // Sử dụng giá trị chuỗi cho endDate
-      .input('daysOfWeek', sql.NVarChar, daysOfWeek) // Thêm input cho DaysOfWeek
+    const result = await pool
+      .request()
+      .input("userId", sql.Int, userId) // Sử dụng giá trị số nguyên cho userId
+      .input("startDate", sql.Date, startDate) // Sử dụng giá trị chuỗi cho startDate
+      .input("endDate", sql.Date, endDate) // Sử dụng giá trị chuỗi cho endDate
+      .input("daysOfWeek", sql.NVarChar, daysOfWeek) // Thêm input cho DaysOfWeek
       .query(`
         SELECT ws.*, s.ShiftName, s.StartTime, s.EndTime, l.LocationName, l.Latitude, l.Longitude, l.Radius
         FROM WorkSchedules ws
@@ -1363,9 +1420,8 @@ const getShiftForAttendance = async (req, res) => {
       `);
 
     // Gửi dữ liệu theo định dạng JSON
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
-
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch làm việc:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1375,7 +1431,6 @@ const getShiftForAttendance = async (req, res) => {
     }
   }
 };
-
 
 const getAllIsCombo = async (req, res) => {
   console.log("Request received to fetch combo data!");
@@ -1387,8 +1442,7 @@ const getAllIsCombo = async (req, res) => {
     console.log("Connected to database successfully");
 
     // Thực hiện truy vấn để lấy tất cả combo
-    let result = await pool.request()
-      .query(`       
+    let result = await pool.request().query(`       
  SELECT 
           ComboID,
           Title,
@@ -1403,19 +1457,17 @@ const getAllIsCombo = async (req, res) => {
        
       `);
 
-
     res.status(200).json({
       success: true,
       data: result.recordset,
-      message: "Combo data fetched successfully"
+      message: "Combo data fetched successfully",
     });
-
   } catch (error) {
     console.error("Error fetching combo data:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Internal Server Error", 
-      error: error.message 
+      message: "Internal Server Error",
+      error: error.message,
     });
   } finally {
     // Đóng kết nối
@@ -1436,8 +1488,7 @@ const getAllIsNotCombo = async (req, res) => {
     console.log("Connected to database successfully");
 
     // Thực hiện truy vấn để lấy tất cả combo
-    let result = await pool.request()
-      .query(`       
+    let result = await pool.request().query(`       
  SELECT 
           ComboID,
           Title,
@@ -1451,19 +1502,17 @@ const getAllIsNotCombo = async (req, res) => {
 		WHERE IsCombo = 0     
       `);
 
-
     res.status(200).json({
       success: true,
       data: result.recordset,
-      message: "Combo data fetched successfully"
+      message: "Combo data fetched successfully",
     });
-
   } catch (error) {
     console.error("Error fetching combo data:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Internal Server Error", 
-      error: error.message 
+      message: "Internal Server Error",
+      error: error.message,
     });
   } finally {
     // Đóng kết nối
@@ -1473,8 +1522,6 @@ const getAllIsNotCombo = async (req, res) => {
     }
   }
 };
-
-
 
 const updateShifts = async (req, res) => {
   let pool;
@@ -1487,10 +1534,18 @@ const updateShifts = async (req, res) => {
     }
 
     // Lấy dữ liệu từ request body
-    const { ShiftId ,ShiftName, StartTime, EndTime, IsCrossDay, Status } = req.body;
+    const { ShiftId, ShiftName, StartTime, EndTime, IsCrossDay, Status } =
+      req.body;
 
     // Kiểm tra các trường bắt buộc
-    if (!ShiftId || !ShiftName || !StartTime || !EndTime || IsCrossDay === undefined || !Status) {
+    if (
+      !ShiftId ||
+      !ShiftName ||
+      !StartTime ||
+      !EndTime ||
+      IsCrossDay === undefined ||
+      !Status
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -1503,21 +1558,26 @@ const updateShifts = async (req, res) => {
     console.log("Thời gian kết thúc (formatted):", endTimeFormatted);
 
     // Kiểm tra định dạng thời gian
-    if (!isValidTimeFormat(startTimeFormatted) || !isValidTimeFormat(endTimeFormatted)) {
-      return res.status(400).json({ message: "Invalid time format for StartTime or EndTime" });
+    if (
+      !isValidTimeFormat(startTimeFormatted) ||
+      !isValidTimeFormat(endTimeFormatted)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid time format for StartTime or EndTime" });
     }
 
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Shifts");
 
-    const result = await pool.request()
-    .input('ShiftId', ShiftId)
-    .input('ShiftName', ShiftName)
-    .input('StartTime', startTimeFormatted)
-    .input('EndTime', endTimeFormatted)
-    .input('IsCrossDay', IsCrossDay)
-    .input('Status', Status) 
-    .query(`
+    const result = await pool
+      .request()
+      .input("ShiftId", ShiftId)
+      .input("ShiftName", ShiftName)
+      .input("StartTime", startTimeFormatted)
+      .input("EndTime", endTimeFormatted)
+      .input("IsCrossDay", IsCrossDay)
+      .input("Status", Status).query(`
         UPDATE Shifts 
         SET ShiftName = @ShiftName,
             StartTime = @StartTime,
@@ -1527,7 +1587,12 @@ const updateShifts = async (req, res) => {
         WHERE ShiftId = @ShiftId
       `);
 
-    res.status(201).json({ message: "Shift update successfully", shiftId: result.rowsAffected[0] });
+    res
+      .status(201)
+      .json({
+        message: "Shift update successfully",
+        shiftId: result.rowsAffected[0],
+      });
   } catch (error) {
     console.error("Lỗi khi sửa ca làm:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1555,48 +1620,60 @@ const removeShifts = async (req, res) => {
     console.log("Connecting to SQL Server Table Shifts");
 
     // Xóa các bản ghi trong bảng Attendance trước
-    const deleteAttendance = await pool.request()
-      .input('ShiftId', sql.Int, ShiftId)
+    const deleteAttendance = await pool
+      .request()
+      .input("ShiftId", sql.Int, ShiftId)
       .query(`DELETE FROM Attendance WHERE ShiftId = @ShiftId`);
-    console.log("Đã xóa các bản ghi liên quan trong bảng Attendance:", deleteAttendance.rowsAffected);
+    console.log(
+      "Đã xóa các bản ghi liên quan trong bảng Attendance:",
+      deleteAttendance.rowsAffected
+    );
 
     // Xóa các bản ghi trong bảng WorkSchedules trước
-    const deleteWorkSchedules = await pool.request()
-      .input('ShiftId', sql.Int, ShiftId)
+    const deleteWorkSchedules = await pool
+      .request()
+      .input("ShiftId", sql.Int, ShiftId)
       .query(`DELETE FROM WorkSchedules WHERE ShiftId = @ShiftId`);
-    console.log("Đã xóa các bản ghi liên quan trong bảng WorkSchedules:", deleteWorkSchedules.rowsAffected);
+    console.log(
+      "Đã xóa các bản ghi liên quan trong bảng WorkSchedules:",
+      deleteWorkSchedules.rowsAffected
+    );
 
     // Xóa các bản ghi trong bảng Locations nếu cần
-    const checkLocation = await pool.request()
-      .input('ShiftId', sql.Int, ShiftId)
-      .query(`
+    const checkLocation = await pool
+      .request()
+      .input("ShiftId", sql.Int, ShiftId).query(`
         SELECT COUNT(*) as count 
         FROM Locations 
         WHERE ShiftId = @ShiftId
       `);
 
     if (checkLocation.recordset[0].count > 0) {
-      const deleteLocations = await pool.request()
-        .input('ShiftId', sql.Int, ShiftId)
+      const deleteLocations = await pool
+        .request()
+        .input("ShiftId", sql.Int, ShiftId)
         .query(`DELETE FROM Locations WHERE ShiftId = @ShiftId`);
-      console.log("Đã xóa các bản ghi liên quan trong bảng Locations:", deleteLocations.rowsAffected);
+      console.log(
+        "Đã xóa các bản ghi liên quan trong bảng Locations:",
+        deleteLocations.rowsAffected
+      );
     }
 
     // Sau đó xóa từ bảng Shifts
-    const deleteShift = await pool.request()
-      .input('ShiftId', sql.Int, ShiftId)
+    const deleteShift = await pool
+      .request()
+      .input("ShiftId", sql.Int, ShiftId)
       .query(`DELETE FROM Shifts WHERE ShiftId = @ShiftId`);
 
     if (deleteShift.rowsAffected[0] > 0) {
-      res.status(200).json({ 
+      res.status(200).json({
         message: "Shift deleted successfully",
-        shiftId: ShiftId
+        shiftId: ShiftId,
       });
       console.log("Ca làm đã được xóa thành công:", deleteShift);
     } else {
       res.status(404).json({ message: "Shift not found" });
     }
-
   } catch (error) {
     console.error("Lỗi khi xóa ca làm:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1606,9 +1683,6 @@ const removeShifts = async (req, res) => {
     }
   }
 };
-
-
-
 
 const updateLocationShifts = async (req, res) => {
   let pool;
@@ -1621,28 +1695,43 @@ const updateLocationShifts = async (req, res) => {
     }
 
     // Lấy dữ liệu từ request body
-    const { LocationId ,LocationName, Latitude, Longitude, Radius, ShiftId } = req.body;
+    const { LocationId, LocationName, Latitude, Longitude, Radius, ShiftId } =
+      req.body;
 
     // Kiểm tra các trường bắt buộc
-    if (!LocationId || !LocationName || !Latitude || !Longitude || Radius === undefined || !ShiftId) {
+    if (
+      !LocationId ||
+      !LocationName ||
+      !Latitude ||
+      !Longitude ||
+      Radius === undefined ||
+      !ShiftId
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
- 
+
     // In ra để kiểm tra dữ liệu
-     
-    console.log("Dữ liệu vị trí:", {LocationId, LocationName, Latitude, Longitude, Radius, ShiftId });
- 
+
+    console.log("Dữ liệu vị trí:", {
+      LocationId,
+      LocationName,
+      Latitude,
+      Longitude,
+      Radius,
+      ShiftId,
+    });
+
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Locations");
 
-    const result = await pool.request()
-      .input('LocationId', LocationId)
-      .input('LocationName', LocationName)
-      .input('Latitude',Latitude) // Convert to float
-      .input('Longitude', Longitude) // Convert to float
-      .input('Radius', Radius)
-      .input('ShiftId', ShiftId)
-      .query(`
+    const result = await pool
+      .request()
+      .input("LocationId", LocationId)
+      .input("LocationName", LocationName)
+      .input("Latitude", Latitude) // Convert to float
+      .input("Longitude", Longitude) // Convert to float
+      .input("Radius", Radius)
+      .input("ShiftId", ShiftId).query(`
         UPDATE Locations 
         SET LocationName = @LocationName,
             Latitude = @Latitude,
@@ -1652,7 +1741,12 @@ const updateLocationShifts = async (req, res) => {
         WHERE LocationId = @LocationId
       `);
 
-    res.status(201).json({ message: "Location updated successfully", locationId: result.rowsAffected[0] });
+    res
+      .status(201)
+      .json({
+        message: "Location updated successfully",
+        locationId: result.rowsAffected[0],
+      });
   } catch (error) {
     console.error("Lỗi khi sửa vị trí:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -1685,9 +1779,9 @@ const removeLocationShifts = async (req, res) => {
     console.log("Connecting to SQL Server Table Locations");
 
     // Kiểm tra LocationId có tồn tại không
-    const checkLocation = await pool.request()
-      .input('LocationId', sql.Int, LocationId)
-      .query(`
+    const checkLocation = await pool
+      .request()
+      .input("LocationId", sql.Int, LocationId).query(`
         SELECT COUNT(*) as count 
         FROM Locations 
         WHERE LocationId = @LocationId
@@ -1698,9 +1792,9 @@ const removeLocationShifts = async (req, res) => {
     }
 
     // Lấy ShiftId từ Location để xóa các bản ghi liên quan trong WorkSchedules
-    const getShiftId = await pool.request()
-      .input('LocationId', sql.Int, LocationId)
-      .query(`
+    const getShiftId = await pool
+      .request()
+      .input("LocationId", sql.Int, LocationId).query(`
         SELECT ShiftId 
         FROM Locations 
         WHERE LocationId = @LocationId
@@ -1709,9 +1803,7 @@ const removeLocationShifts = async (req, res) => {
     const { ShiftId } = getShiftId.recordset[0];
 
     // Xóa các bản ghi trong WorkSchedules liên quan đến ShiftId
-    await pool.request()
-      .input('ShiftId', sql.Int, ShiftId)
-      .query(`
+    await pool.request().input("ShiftId", sql.Int, ShiftId).query(`
         DELETE FROM WorkSchedules 
         WHERE ShiftId = @ShiftId
       `);
@@ -1719,25 +1811,25 @@ const removeLocationShifts = async (req, res) => {
     console.log(`Đã xóa các lịch làm việc liên quan đến ShiftId: ${ShiftId}`);
 
     // Xóa location từ bảng Locations
-    const deleteLocation = await pool.request()
-      .input('LocationId', sql.Int, LocationId)
+    const deleteLocation = await pool
+      .request()
+      .input("LocationId", sql.Int, LocationId)
       .query(`DELETE FROM Locations WHERE LocationId = @LocationId`);
 
     if (deleteLocation.rowsAffected[0] > 0) {
-      res.status(200).json({ 
-        message: "Location deleted successfully", 
+      res.status(200).json({
+        message: "Location deleted successfully",
         locationId: LocationId,
-        affectedRows: deleteLocation.rowsAffected[0]
+        affectedRows: deleteLocation.rowsAffected[0],
       });
     } else {
       res.status(400).json({ message: "Failed to delete location" });
     }
-
   } catch (error) {
     console.error("Lỗi khi xóa địa điểm:", error);
-    res.status(500).json({ 
-      message: "Lỗi Server", 
-      error: error.message 
+    res.status(500).json({
+      message: "Lỗi Server",
+      error: error.message,
     });
   } finally {
     if (pool) {
@@ -1768,8 +1860,7 @@ const checkUsername = async (req, res) => {
     console.log("Connecting to SQL Server Table Users");
 
     // Thực hiện truy vấn
-    const result = await pool.request()
-      .input('UserName', sql.VarChar, UserName)
+    const result = await pool.request().input("UserName", sql.VarChar, UserName)
       .query(`
         SELECT UserName 
         FROM Users 
@@ -1779,7 +1870,12 @@ const checkUsername = async (req, res) => {
     // Kiểm tra kết quả trả về từ truy vấn
     if (result.recordset.length > 0) {
       // Nếu UserName tồn tại
-      res.status(200).json({ message: "UserName found", userName: result.recordset[0].UserName });
+      res
+        .status(200)
+        .json({
+          message: "UserName found",
+          userName: result.recordset[0].UserName,
+        });
     } else {
       // Nếu UserName không tồn tại
       res.status(404).json({ message: "UserName not found" });
@@ -1799,7 +1895,7 @@ const updateWorkSchedules = async (req, res) => {
   let pool;
   try {
     console.log("Đã nhận updateWorkSchedules từ Flutter!");
-  
+
     if (!req.body) {
       return res.status(400).json({ message: "Request body is missing" });
     }
@@ -1811,26 +1907,31 @@ const updateWorkSchedules = async (req, res) => {
     }
 
     const parseDate = (dateStr) => {
-      const [day, month, year] = dateStr.split('/');
+      const [day, month, year] = dateStr.split("/");
       return `${year}-${month}-${day}`;
     };
 
     const formattedStartDate = parseDate(StartDate);
     const formattedEndDate = parseDate(EndDate);
 
-    const formattedDaysOfWeek = DaysOfWeek.replace(/[\[\]]/g, '');
+    const formattedDaysOfWeek = DaysOfWeek.replace(/[\[\]]/g, "");
 
-    console.log("Dữ liệu lịch làm việc:", { ScheduleId, StartDate: formattedStartDate, EndDate: formattedEndDate, DaysOfWeek: formattedDaysOfWeek });
+    console.log("Dữ liệu lịch làm việc:", {
+      ScheduleId,
+      StartDate: formattedStartDate,
+      EndDate: formattedEndDate,
+      DaysOfWeek: formattedDaysOfWeek,
+    });
 
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table WorkSchedules");
 
-    const result = await pool.request()
-      .input('ScheduleId', sql.Int, ScheduleId)
-      .input('StartDate', sql.Date, formattedStartDate)
-      .input('EndDate', sql.Date, formattedEndDate)
-      .input('DaysOfWeek', sql.NVarChar(70), formattedDaysOfWeek)
-      .query(`
+    const result = await pool
+      .request()
+      .input("ScheduleId", sql.Int, ScheduleId)
+      .input("StartDate", sql.Date, formattedStartDate)
+      .input("EndDate", sql.Date, formattedEndDate)
+      .input("DaysOfWeek", sql.NVarChar(70), formattedDaysOfWeek).query(`
         UPDATE WorkSchedules
         SET StartDate = @StartDate,
             EndDate = @EndDate,
@@ -1842,7 +1943,9 @@ const updateWorkSchedules = async (req, res) => {
       res.status(200).json({ message: "Work schedule updated successfully" });
       console.log("Lịch làm việc đã được sửa thành công:", result);
     } else {
-      res.status(404).json({ message: "Work schedule not found or no changes made" });
+      res
+        .status(404)
+        .json({ message: "Work schedule not found or no changes made" });
     }
   } catch (error) {
     console.error("Lỗi khi sửa lịch làm việc:", error);
@@ -1860,7 +1963,9 @@ const getFilmFavourire = async (req, res) => {
   // Lấy userId từ req.params
   const userId = parseInt(req.params.userId);
   if (isNaN(userId)) {
-    return res.status(400).json({ message: "Invalid or missing userId in params" });
+    return res
+      .status(400)
+      .json({ message: "Invalid or missing userId in params" });
   }
 
   console.log("Đã nhận UserID từ Flutter!");
@@ -1873,9 +1978,7 @@ const getFilmFavourire = async (req, res) => {
     console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để lấy dữ liệu từ bảng Favourite
-    let result = await pool.request() 
-      .input('userId', sql.Int, userId)
-      .query(`
+    let result = await pool.request().input("userId", sql.Int, userId).query(`
         SELECT u.UserId, m.MovieID, m.Title, m.PosterUrl 
         FROM Favourite f 
         JOIN Users u ON u.UserId = f.UserId
@@ -1891,7 +1994,9 @@ const getFilmFavourire = async (req, res) => {
     console.log("Data fetched successfully");
   } catch (error) {
     console.error("Error fetching data:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     if (pool) {
       await pool.close();
@@ -1899,49 +2004,45 @@ const getFilmFavourire = async (req, res) => {
   }
 };
 
-
-
-
 const createMomoPayment = async (req, res) => {
   try {
-      const { amount, orderId, orderInfo } = req.body;
+    const { amount, orderId, orderInfo } = req.body;
 
-      // Create signature
-      const rawSignature = `accessKey=${momoConfig.MOMO_ACCESS_KEY}&amount=${amount}&extraData=&ipnUrl=${momoConfig.IPN_URL}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${momoConfig.MOMO_PARTNER_CODE}&redirectUrl=${momoConfig.REDIRECT_URL}&requestId=${orderId}&requestType=${momoConfig.REQUEST_TYPE}`;
-      
-      const signature = crypto
-          .createHmac('sha256', momoConfig.MOMO_SECRET_KEY)
-          .update(rawSignature)
-          .digest('hex');
+    // Create signature
+    const rawSignature = `accessKey=${momoConfig.MOMO_ACCESS_KEY}&amount=${amount}&extraData=&ipnUrl=${momoConfig.IPN_URL}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${momoConfig.MOMO_PARTNER_CODE}&redirectUrl=${momoConfig.REDIRECT_URL}&requestId=${orderId}&requestType=${momoConfig.REQUEST_TYPE}`;
 
-      // Create payload for MoMo
-      const requestBody = {
-          partnerCode: momoConfig.MOMO_PARTNER_CODE,
-          accessKey: momoConfig.MOMO_ACCESS_KEY,
-          partnerName: "Test",
-          storeId: "MomoTestStore",
-          requestId: orderId,
-          amount: amount,
-          orderId: orderId,
-          orderInfo: orderInfo,
-          redirectUrl: momoConfig.REDIRECT_URL,
-          ipnUrl: momoConfig.IPN_URL,
-          requestType: momoConfig.REQUEST_TYPE,
-          extraData: "",
-          signature: signature
-      };
+    const signature = crypto
+      .createHmac("sha256", momoConfig.MOMO_SECRET_KEY)
+      .update(rawSignature)
+      .digest("hex");
 
-      // Call MoMo API
-      const response = await axios.post(momoConfig.MOMO_ENDPOINT, requestBody);
+    // Create payload for MoMo
+    const requestBody = {
+      partnerCode: momoConfig.MOMO_PARTNER_CODE,
+      accessKey: momoConfig.MOMO_ACCESS_KEY,
+      partnerName: "Test",
+      storeId: "MomoTestStore",
+      requestId: orderId,
+      amount: amount,
+      orderId: orderId,
+      orderInfo: orderInfo,
+      redirectUrl: momoConfig.REDIRECT_URL,
+      ipnUrl: momoConfig.IPN_URL,
+      requestType: momoConfig.REQUEST_TYPE,
+      extraData: "",
+      signature: signature,
+    };
 
-      // Return payUrl to client
-      res.status(200).json({
-          payUrl: response.data.payUrl
-      });
+    // Call MoMo API
+    const response = await axios.post(momoConfig.MOMO_ENDPOINT, requestBody);
 
+    // Return payUrl to client
+    res.status(200).json({
+      payUrl: response.data.payUrl,
+    });
   } catch (error) {
-      console.error("Error creating MoMo payment:", error);
-      res.status(500).json({ message: "Server Error", error: error.message });
+    console.error("Error creating MoMo payment:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 const paymentStatus = {}; // Khởi tạo object lưu trạng thái thanh toán
@@ -1954,20 +2055,18 @@ const momoCallback = async (req, res) => {
     const { orderId, resultCode } = req.query;
 
     // Kiểm tra trạng thái thanh toán
-    if (resultCode === '0') {
+    if (resultCode === "0") {
       paymentStatus[orderId] = "success"; // Lưu trạng thái thành công
       return res.status(200).json({ message: "Payment successful" });
     } else {
       paymentStatus[orderId] = "failed"; // Lưu trạng thái thất bại
       return res.status(400).json({ message: "Payment failed" });
     }
-
   } catch (error) {
     console.error("Error handling MoMo callback:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
-
 
 const checkTransactionStatus = async (req, res) => {
   try {
@@ -1976,7 +2075,7 @@ const checkTransactionStatus = async (req, res) => {
     if (!orderId) {
       return res.status(400).json({
         success: false,
-        message: "OrderId is required"
+        message: "OrderId is required",
       });
     }
 
@@ -1988,9 +2087,9 @@ const checkTransactionStatus = async (req, res) => {
 
     // Tạo signature với HMAC SHA256
     const signature = crypto
-      .createHmac('sha256', momoConfig.MOMO_SECRET_KEY)
+      .createHmac("sha256", momoConfig.MOMO_SECRET_KEY)
       .update(rawSignature)
-      .digest('hex');
+      .digest("hex");
 
     // Tạo payload cho API check status của MoMo
     const requestBody = {
@@ -1998,7 +2097,7 @@ const checkTransactionStatus = async (req, res) => {
       accessKey: momoConfig.MOMO_ACCESS_KEY,
       requestId: requestId,
       orderId: orderId,
-      signature: signature
+      signature: signature,
     };
 
     // Gọi API check status của MoMo
@@ -2039,26 +2138,25 @@ const checkTransactionStatus = async (req, res) => {
       status: status,
       message: transactionStatus.message,
       payType: transactionStatus.payType || null,
-      responseTime: transactionStatus.responseTime
+      responseTime: transactionStatus.responseTime,
     };
 
     return res.status(200).json(responseData);
-
   } catch (error) {
     console.error("Error checking MoMo transaction status:", error);
-    
+
     if (error.response && error.response.data) {
       return res.status(400).json({
         success: false,
         message: "MoMo API Error",
-        error: error.response.data
+        error: error.response.data,
       });
     }
 
     return res.status(500).json({
       success: false,
       message: "Server Error",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -2073,8 +2171,7 @@ const getActor = async (req, res) => {
     console.log("Connected to database successfully");
 
     // Thực hiện truy vấn để lấy thông tin diễn viên và movie ID
-    let result = await pool.request()
-      .query(`       
+    let result = await pool.request().query(`       
         SELECT 
           A.Name,
           A.Image,
@@ -2087,20 +2184,19 @@ const getActor = async (req, res) => {
           Movies M ON MA.MovieID = M.MovieID;
       `);
 
-    console.log('Fetched actor and movie data:', result.recordset);
+    console.log("Fetched actor and movie data:", result.recordset);
 
     res.status(200).json({
       success: true,
       data: result.recordset,
-      message: "Actor and movie data fetched successfully"
+      message: "Actor and movie data fetched successfully",
     });
-
   } catch (error) {
     console.error("Error fetching actor and movie data:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Internal Server Error", 
-      error: error.message 
+      message: "Internal Server Error",
+      error: error.message,
     });
   } finally {
     // Đóng kết nối
@@ -2121,14 +2217,17 @@ const updateSatusBuyTicketInfo = async (req, res) => {
 
     // Kiểm tra nếu BuyTicketId không tồn tại
     if (!BuyTicketId) {
-      return res.status(400).json({ message: "BuyTicketId is missing in query" });
+      return res
+        .status(400)
+        .json({ message: "BuyTicketId is missing in query" });
     }
 
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table BuyTicketInfo");
 
-    const result = await pool.request()
-      .input('BuyTicketId', sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
+    const result = await pool
+      .request()
+      .input("BuyTicketId", sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
       .query(`
         UPDATE BuyTicketInfo 
         SET Status = 'Đã thanh toán'
@@ -2156,14 +2255,17 @@ const checkInBuyTicket = async (req, res) => {
 
     // Kiểm tra nếu BuyTicketId không tồn tại
     if (!BuyTicketId) {
-      return res.status(400).json({ message: "BuyTicketId is missing in query" });
+      return res
+        .status(400)
+        .json({ message: "BuyTicketId is missing in query" });
     }
 
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table BuyTicketInfo");
 
-    const result = await pool.request()
-      .input('BuyTicketId', sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
+    const result = await pool
+      .request()
+      .input("BuyTicketId", sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
       .query(`
         UPDATE BuyTicketInfo
 SET IsCheckIn = 1
@@ -2179,37 +2281,42 @@ WHERE BuyTicketId = @BuyTicketId;
     }
   }
 };
+
 const findAllBuyTicketByUserId = async (req, res) => {
-  let pool;
   try {
     console.log("Đã nhận findAllBuyTicketByUserId Flutter!");
 
     // Lấy UserId từ query string
-    const { UserId } = req.query; 
+    const { UserId } = req.query;
 
-    // Kiểm tra nếu UserId không tồn tại
     if (!UserId) {
       return res.status(400).json({ message: "UserId is missing in query" });
     }
 
-    pool = await sql.connect(connection);
-    console.log("Connecting to SQL Server");
+    // Sử dụng pool kết nối
+    const pool = await poolPromise;
+    const transaction = pool.transaction();
 
-    const result = await pool.request()
-      .input('UserId', sql.VarChar, UserId) // Đảm bảo kiểu dữ liệu tương ứng
-      .query(`
-       EXEC FindAllBuyTicketByUserId @UserId
-      `); 
+    await transaction.begin(); // Bắt đầu transaction
 
-    // Trả về kết quả truy vấn
-    res.status(200).json(result.recordset);
+    try {
+      const request = transaction.request();
+      const response = await request
+        .input("UserId", sql.VarChar, UserId)
+        .query(`EXEC FindAllBuyTicketByUserId @UserId`);
+
+      await transaction.commit(); // Commit transaction nếu thành công
+      res.status(200).json(response.recordset);
+    } catch (innerError) {
+      await transaction.rollback(); // Rollback nếu có lỗi trong transaction
+      console.error("Lỗi trong transaction:", innerError);
+      res
+        .status(500)
+        .json({ message: "Lỗi trong transaction", error: innerError.message });
+    }
   } catch (error) {
     console.error("Lỗi khi lấy dữ liệu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
   }
 };
 
@@ -2252,12 +2359,13 @@ ORDER BY
     `);
 
     // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader("Content-Type", "application/json");
     res.send(JSON.stringify(result.recordset, null, 2)); // Indent with 2 spaces for readability
-
   } catch (error) {
     console.error("Error fetching movies:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message }); 
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   } finally {
     // Đóng kết nối nếu pool đã được khởi tạo
     if (pool) {
@@ -2265,7 +2373,7 @@ ORDER BY
     }
   }
 };
- 
+
 const FindOneBuyTicketById = async (req, res) => {
   let pool;
   try {
@@ -2276,20 +2384,23 @@ const FindOneBuyTicketById = async (req, res) => {
 
     // Kiểm tra nếu BuyTicketId không tồn tại
     if (!BuyTicketId) {
-      return res.status(400).json({ message: "BuyTicketId is missing in query" });
+      return res
+        .status(400)
+        .json({ message: "BuyTicketId is missing in query" });
     }
 
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table BuyTicketInfo");
 
-    const result = await pool.request()
-      .input('BuyTicketId', sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
+    const result = await pool
+      .request()
+      .input("BuyTicketId", sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
       .query(`
       EXEC FindOneBuyTicketById @BuyTicketId
 
       `);
 
-      res.status(200).json({ data: result.recordset });
+    res.status(200).json({ data: result.recordset });
   } catch (error) {
     console.error("Lỗi khi sửa trạng thái:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -2316,10 +2427,10 @@ const insertRate = async (req, res) => {
     console.log("Connecting to SQL Server Table Rate");
 
     // Kiểm tra xem đã có bản ghi với MovieId và UserId hay chưa
-    const checkExistingRate = await pool.request()
-      .input('UserId', sql.Int, UserId)
-      .input('MovieId', sql.Int, MovieId)
-      .query(`
+    const checkExistingRate = await pool
+      .request()
+      .input("UserId", sql.Int, UserId)
+      .input("MovieId", sql.Int, MovieId).query(`
         SELECT COUNT(*) AS count
         FROM Rate
         WHERE MovieID = @MovieId AND UserId = @UserId
@@ -2327,23 +2438,24 @@ const insertRate = async (req, res) => {
 
     // Nếu có bản ghi trùng, trả về lỗi
     if (checkExistingRate.recordset[0].count > 0) {
-      return res.status(400).json({ message: "User has already rated this movie" });
+      return res
+        .status(400)
+        .json({ message: "User has already rated this movie" });
     }
 
     // Nếu chưa có bản ghi trùng, thực hiện insert
-    const result = await pool.request()
-      .input('UserId', sql.Int, UserId) 
-      .input('MovieId', sql.Int, MovieId)
-      .input('Content', sql.NVarChar, Content)
-      .input('Rating', sql.Float, Rating)
-      .query(`
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, UserId)
+      .input("MovieId", sql.Int, MovieId)
+      .input("Content", sql.NVarChar, Content)
+      .input("Rating", sql.Float, Rating).query(`
         INSERT INTO Rate (MovieID, UserId, Content, Rating, RatingDate)
         VALUES (@MovieId, @UserId, @Content, @Rating, GETDATE())  -- Chèn thời gian hiện tại vào RatingDate
       `);
 
     // Trả về kết quả khi insert thành công
     res.status(200).json({ message: "Rate inserted successfully" });
-
   } catch (error) {
     console.error("Lỗi khi thực hiện insertRate:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -2371,10 +2483,10 @@ const getOneRate = async (req, res) => {
     console.log("Connecting to SQL Server Table Rate");
 
     // Thực hiện truy vấn để lấy thông tin đánh giá
-    const result = await pool.request()
-      .input('UserId', sql.Int, UserId)
-      .input('MovieId', sql.Int, MovieId)
-      .query(`
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, UserId)
+      .input("MovieId", sql.Int, MovieId).query(`
         SELECT *
         FROM Rate
         WHERE MovieID = @MovieId AND UserId = @UserId
@@ -2386,7 +2498,6 @@ const getOneRate = async (req, res) => {
     } else {
       res.status(404).json({}); // Trả về dữ liệu rỗng nếu không có kết quả
     }
-
   } catch (error) {
     console.error("Lỗi khi thực hiện getRate:", error);
     res.status(500).json({ error: error.message });
@@ -2414,8 +2525,7 @@ const getAllRateInfoByMovieID = async (req, res) => {
     console.log("Connecting to SQL Server Table Rate");
 
     // Thực hiện truy vấn để lấy thông tin đánh giá
-    const result = await pool.request()
-      .input('MovieId', sql.Int, MovieId)
+    const result = await pool.request().input("MovieId", sql.Int, MovieId)
       .query(`
       SELECT 
         u.UserId AS UserID,
@@ -2439,7 +2549,6 @@ const getAllRateInfoByMovieID = async (req, res) => {
     } else {
       res.status(404).json({ message: "No reviews found for this movie" }); // Trả về thông báo không tìm thấy dữ liệu
     }
-
   } catch (error) {
     console.error("Lỗi khi thực hiện getRate:", error);
     res.status(500).json({ error: error.message });
@@ -2457,39 +2566,56 @@ const insertMovie = async (req, res) => {
 
     // Lấy các tham số từ body của request
     const {
-      CinemaID, Title, Description, Duration, ReleaseDate, PosterUrl, 
-      TrailerUrl, Age, SubTitle, Voiceover, StatusMovie, Price, 
-      ActorsData, GenreIds
+      CinemaID,
+      Title,
+      Description,
+      Duration,
+      ReleaseDate,
+      PosterUrl,
+      TrailerUrl,
+      Age,
+      SubTitle,
+      Voiceover,
+      StatusMovie,
+      Price,
+      ActorsData,
+      GenreIds,
     } = req.body;
 
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server");
 
     // Thực hiện truy vấn gọi thủ tục sp_InsertMovie
-    const result = await pool.request()
-      .input('CinemaID', sql.Int, CinemaID)
-      .input('Title', sql.NVarChar, Title)
-      .input('Description', sql.NVarChar, Description)
-      .input('Duration', sql.Int, Duration)
-      .input('ReleaseDate', sql.Date, ReleaseDate)
-      .input('PosterUrl', sql.NVarChar, PosterUrl)
-      .input('TrailerUrl', sql.NVarChar, TrailerUrl)
-      .input('Age', sql.NVarChar, Age)
-      .input('SubTitle', sql.Int, SubTitle)
-      .input('Voiceover', sql.Int, Voiceover)
-      .input('StatusMovie', sql.NVarChar, StatusMovie)
-      .input('Price', sql.Float, Price)
-      .input('ActorsData', sql.NVarChar, JSON.stringify(ActorsData))  // Chuyển đối tượng JSON thành chuỗi
-      .input('GenreIds', sql.NVarChar, JSON.stringify(GenreIds))      // Chuyển đối tượng JSON thành chuỗi
+    const result = await pool
+      .request()
+      .input("CinemaID", sql.Int, CinemaID)
+      .input("Title", sql.NVarChar, Title)
+      .input("Description", sql.NVarChar, Description)
+      .input("Duration", sql.Int, Duration)
+      .input("ReleaseDate", sql.Date, ReleaseDate)
+      .input("PosterUrl", sql.NVarChar, PosterUrl)
+      .input("TrailerUrl", sql.NVarChar, TrailerUrl)
+      .input("Age", sql.NVarChar, Age)
+      .input("SubTitle", sql.Int, SubTitle)
+      .input("Voiceover", sql.Int, Voiceover)
+      .input("StatusMovie", sql.NVarChar, StatusMovie)
+      .input("Price", sql.Float, Price)
+      .input("ActorsData", sql.NVarChar, JSON.stringify(ActorsData)) // Chuyển đối tượng JSON thành chuỗi
+      .input("GenreIds", sql.NVarChar, JSON.stringify(GenreIds)) // Chuyển đối tượng JSON thành chuỗi
       .query(`
         EXEC sp_InsertMovie
           @CinemaID, @Title, @Description, @Duration, @ReleaseDate, 
           @PosterUrl, @TrailerUrl, @Age, @SubTitle, @Voiceover, 
           @StatusMovie, @Price, @ActorsData, @GenreIds
-      `); 
+      `);
 
     // Trả về kết quả truy vấn
-    res.status(200).json({ message: "Movie inserted successfully", result: result.recordset });
+    res
+      .status(200)
+      .json({
+        message: "Movie inserted successfully",
+        result: result.recordset,
+      });
   } catch (error) {
     console.error("Lỗi khi chèn dữ liệu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -2499,7 +2625,6 @@ const insertMovie = async (req, res) => {
     }
   }
 };
-
 
 module.exports = {
   getHomepage,
@@ -2533,11 +2658,11 @@ module.exports = {
   removeShifts,
   updateLocationShifts,
   removeLocationShifts,
-  checkUsername, 
-  updateWorkSchedules, 
+  checkUsername,
+  updateWorkSchedules,
   findByViewIDUser,
-  getFilmFavourire, 
-  createMomoPayment, 
+  getFilmFavourire,
+  createMomoPayment,
   momoCallback,
   checkTransactionStatus,
   getActor,
