@@ -881,8 +881,6 @@ ORDER BY
 };
 const bucket = require("../config/firebaseConfig");
 
-const { v4: uuidv4 } = require("uuid"); // Để tạo token duy nhất
-
 const uploadImage = async (req, res) => {
   try {
     const file = req.file;
@@ -897,9 +895,6 @@ const uploadImage = async (req, res) => {
     const blobStream = fileUpload.createWriteStream({
       metadata: {
         contentType: file.mimetype,
-        metadata: {
-          firebaseStorageDownloadTokens: uuidv4(), // Thêm token duy nhất
-        },
       },
     });
 
@@ -910,17 +905,15 @@ const uploadImage = async (req, res) => {
 
     blobStream.on("finish", async () => {
       try {
-        const metadata = await fileUpload.getMetadata();
-        const downloadToken = metadata[0].metadata.firebaseStorageDownloadTokens;
-
+        // Không cần lấy downloadToken nữa
         const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${
           bucket.name
-        }/o/${encodeURIComponent(fileName)}?alt=media&token=${downloadToken}`;
+        }/o/${encodeURIComponent(fileName)}?alt=media`;
 
         return res.status(200).json({ url: publicUrl });
       } catch (error) {
-        console.error("Metadata error:", error.message);
-        return res.status(500).json({ error: "Error retrieving file metadata." });
+        console.error("Error generating public URL:", error.message);
+        return res.status(500).json({ error: "Error generating public URL." });
       }
     });
 
@@ -930,6 +923,7 @@ const uploadImage = async (req, res) => {
     return res.status(500).json({ error: "Error uploading file." });
   }
 };
+
 
 // ----------------- SOCKET IO -----------------------
 const getConversations = async (req, res) => {
@@ -2626,6 +2620,54 @@ const insertMovie = async (req, res) => {
   }
 };
 
+const insertShowTime = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận insertShowtime Flutter!");
+
+    // Lấy các tham số từ body của request
+    const { StartDate, EndDate, Showtimes } = req.body;
+    console.log(StartDate);
+    console.log(EndDate);
+    console.log(Showtimes);
+
+
+    // Kiểm tra các tham số đầu vào
+    if (!StartDate || !EndDate || !Showtimes) {
+      return res.status(400).json({ message: "Thiếu tham số StartDate, EndDate hoặc Showtimes!" });
+    }
+   
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server");
+   
+    // Thực hiện truy vấn gọi thủ tục sp_InsertShowtimeData
+    const result = await pool
+      .request()
+      .input("StartDate", sql.Date, StartDate)        // Truyền tham số StartDate
+      .input("EndDate", sql.Date, EndDate)            // Truyền tham số EndDate
+      .input("Showtimes", sql.NVarChar, JSON.stringify(Showtimes)) // Chuyển đối tượng JSON thành chuỗi
+      .query(`
+        EXEC InsertShowtimeData @StartDate, @EndDate, @Showtimes;
+      `);
+
+    // Trả về kết quả truy vấn
+    res
+      .status(200)
+      .json({
+        message: "Showtimes inserted successfully",
+        result: result.recordset,
+      });
+  } catch (error) {
+    console.error("Lỗi khi chèn dữ liệu:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
 module.exports = {
   getHomepage,
   findByViewID,
@@ -2675,4 +2717,5 @@ module.exports = {
   getAllRateInfoByMovieID,
   checkInBuyTicket,
   insertMovie,
+  insertShowTime,
 };

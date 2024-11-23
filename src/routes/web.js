@@ -64,6 +64,7 @@ const { getHomepage,
   getAllRateInfoByMovieID,
   checkInBuyTicket,
   insertMovie,
+  insertShowTime,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -120,4 +121,6 @@ route.post('/insertRate', insertRate); //
 route.post('/getRate', getOneRate); // 
 route.post('/getAllRateInfoByMovieID', getAllRateInfoByMovieID); // 
 route.post('/insertMovie', insertMovie); // 
+route.post('/insertShowTime', insertShowTime); // 
+
 module.exports=route;
