@@ -12,6 +12,7 @@ const config = {
         encrypt:false, // Sử dụng nếu bạn đang kết nối đến Azure SQL Database
         trustServerCertificate: true // Sử dụng nếu bạn đang phát triển local
     }
+    
 };  
 
 

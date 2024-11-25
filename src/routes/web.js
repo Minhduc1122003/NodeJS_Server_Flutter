@@ -1,17 +1,21 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-  // Cấu hình multer để lưu trữ file
-  const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, 'uploads/'); // Thư mục lưu trữ file
-    },
-    filename: function (req, file, cb) {
-      cb(null, Date.now() + path.extname(file.originalname)); // Đặt tên file theo thời gian hiện tại
-    }
-  }); 
-  const upload = multer({ storage: storage });
 
+const path = require('path');
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+  console.log(file.mimetype);  // In ra kiểu mime của file
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type'), false);
+  }
+}
+
+});
 const { getHomepage, 
     findByViewID,
     sendEmail,
@@ -62,6 +66,7 @@ const { getHomepage,
   updateInfoUser,
   changePassword,
   changePasswordForEmail,
+  insertMovie,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -122,9 +127,5 @@ route.post('/updateInfoUser', updateInfoUser); //
 route.post('/changePassword', changePassword); // 
 route.post('/changePasswordForEmail', changePasswordForEmail); // 
 
-
-
-
-
-
+route.post('/insertMovie', insertMovie); // 
 module.exports=route;
