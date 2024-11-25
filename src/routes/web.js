@@ -63,6 +63,9 @@ const { getHomepage,
   getOneRate,
   getAllRateInfoByMovieID,
   checkInBuyTicket,
+  updateInfoUser,
+  changePassword,
+  changePasswordForEmail,
   insertMovie,
   insertShowTime,
   getThongkeNguoiDungMoi,
@@ -85,6 +88,8 @@ route.get('/updateSatusBuyTicketInfo', updateSatusBuyTicketInfo);
 route.get('/findAllBuyTicketByUserId', findAllBuyTicketByUserId);
 route.get('/getTop5RateMovie', getTop5RateMovie);
 route.get('/FindOneBuyTicketById', FindOneBuyTicketById);
+route.get('/momo-callback', momoCallback);
+route.get("/check-transaction-status", checkTransactionStatus);
 route.get('/checkInBuyTicket', checkInBuyTicket);
 route.get('/checkInBuyTicket', checkInBuyTicket);
 route.get('/getThongkeNguoiDungMoi', getThongkeNguoiDungMoi);
@@ -118,11 +123,14 @@ route.post('/checkUsername', checkUsername); // Kiểm tra trùng username hay k
 route.post('/updateWorkSchedules', updateWorkSchedules); // Kiểm tra trùng username hay không
 route.post('/findByViewIDUser', findByViewIDUser); // 
 route.post('/create-momo-payment', createMomoPayment);
-route.get('/momo-callback', momoCallback);
-route.get("/check-transaction-status", checkTransactionStatus);
+
 route.post('/insertRate', insertRate); // 
 route.post('/getRate', getOneRate); // 
 route.post('/getAllRateInfoByMovieID', getAllRateInfoByMovieID); // 
+route.post('/updateInfoUser', updateInfoUser); // 
+route.post('/changePassword', changePassword); // 
+route.post('/changePasswordForEmail', changePasswordForEmail); // 
+
 route.post('/insertMovie', insertMovie); // 
 route.post('/insertShowTime', insertShowTime); // 
 

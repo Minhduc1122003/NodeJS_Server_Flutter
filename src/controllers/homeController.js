@@ -2,6 +2,11 @@ const connection = require("../config/database");
 const sql = require("mssql");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
+const crypto = require('crypto');
+const momoConfig = require('../config/momo');
+const axios = require('axios');
+// const bcrypt = require("bcrypt");
+
 const crypto = require("crypto");
 const momoConfig = require("../config/momo");
 const axios = require("axios");
@@ -42,7 +47,7 @@ const getHomepage = async (req, res) => {
       await pool.close(); // Đóng pool
     }
   }
-};
+}; 
 
 // Hàm xử lý cho route POST /findByViewID
 const findByViewID = async (req, res) => {
@@ -140,6 +145,7 @@ const findByViewIDUser = async (req, res) => {
     }
   }
 };
+
 // Hàm gửi email
 const sendEmail = async (req, res) => {
   console.log("Sending email!");
@@ -2553,6 +2559,166 @@ const getAllRateInfoByMovieID = async (req, res) => {
   }
 };
 
+const updateInfoUser = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận updateInfoUser từ Flutter!");
+
+    // Kiểm tra request body
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { UserId, UserName, FullName, PhoneNumber, Photo } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!UserId) {
+      return res.status(400).json({ message: "UserId is required" });
+    }
+
+    // Kết nối SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Users");
+
+    // Truy vấn để cập nhật thông tin người dùng
+    const result = await pool.request()
+      .input('UserId', sql.Int, UserId)
+      .input('UserName', sql.NVarChar(50), UserName || null) // Cho phép null nếu không muốn cập nhật
+      .input('FullName', sql.NVarChar(100), FullName || null)
+      .input('PhoneNumber', sql.NVarChar(20), PhoneNumber || null)
+      .input('Photo', sql.NVarChar(255), Photo || null)
+      .query(`
+        UPDATE Users
+        SET 
+            UserName = COALESCE(@UserName, UserName),
+            FullName = COALESCE(@FullName, FullName),
+            PhoneNumber = COALESCE(@PhoneNumber, PhoneNumber),
+            Photo = COALESCE(@Photo, Photo)
+        WHERE UserId = @UserId
+      `);
+
+    // Kiểm tra kết quả
+    if (result.rowsAffected[0] > 0) {
+      res.status(200).json({ message: "User information updated successfully" });
+      console.log("Thông tin người dùng đã được sửa thành công:", result);
+    } else {
+      res.status(404).json({ message: "User not found or no changes made" });
+    }
+  } catch (error) {
+    console.error("Lỗi khi sửa thông tin người dùng:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  } finally {
+    // Đảm bảo đóng kết nối
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const changePassword = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận yêu cầu thay đổi mật khẩu từ Flutter!");
+
+    // Kiểm tra request body
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { UserId, Password } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!UserId || !Password) {
+      return res.status(400).json({ message: "UserId and Password are required" });
+    }
+
+    // Kết nối SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Users");
+
+    // Truy vấn để thay đổi mật khẩu người dùng
+    const result = await pool.request()
+      .input('UserId', sql.Int, UserId)
+      .input('Password', sql.NVarChar(255), Password) // Bảo vệ mật khẩu cần thêm mã hóa
+      .query(`
+        UPDATE Users
+        SET Password = @Password
+        WHERE UserId = @UserId
+      `);
+
+    // Kiểm tra kết quả
+    if (result.rowsAffected[0] > 0) {
+      res.status(200).json({ message: "Password updated successfully" });
+      console.log("Mật khẩu đã được thay đổi thành công:", result);
+    } else {
+      res.status(404).json({ message: "User not found or no changes made" });
+    }
+  } catch (error) {
+    console.error("Lỗi khi thay đổi mật khẩu:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  } finally {
+    // Đảm bảo đóng kết nối
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+ 
+
+
+const changePasswordForEmail = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận yêu cầu thay đổi mật khẩu từ Flutter!");
+
+    // Kiểm tra request body
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { Password, Email } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!Email || !Password) {
+      return res.status(400).json({ message: "Email and Password are required" });
+    }
+
+    // Kết nối SQL Server
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối với SQL Server Table Users");
+
+    // Truy vấn để thay đổi mật khẩu dựa trên Email
+    const result = await pool.request()
+      .input("Email", sql.NVarChar(255), Email)
+      .input("Password", sql.NVarChar(255), Password) // Không mã hóa mật khẩu
+      .query(`
+        UPDATE Users
+        SET Password = @Password
+        WHERE Email = @Email
+      `);
+
+    // Kiểm tra kết quả
+    if (result.rowsAffected[0] > 0) {
+      res.status(200).json({ message: "Password updated successfully" });
+      console.log("Mật khẩu đã được thay đổi thành công:", result);
+    } else {
+      res.status(404).json({ message: "Email not found or no changes made" });
+    }
+  } catch (error) {
+    console.error("Lỗi khi thay đổi mật khẩu:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  } finally {
+    // Đảm bảo đóng kết nối
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
 const insertMovie = async (req, res) => {
   let pool;
   try {
@@ -2755,8 +2921,12 @@ module.exports = {
   insertRate,
   getOneRate,
   getAllRateInfoByMovieID,
-  checkInBuyTicket,
+  checkInBuyTicket, 
+  updateInfoUser,
+  changePassword,
+  changePasswordForEmail,
   insertMovie,
+
   insertShowTime,
   getThongkeNguoiDungMoi,
 };

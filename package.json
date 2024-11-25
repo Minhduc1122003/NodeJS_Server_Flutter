@@ -16,10 +16,12 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
+    "firebase-admin": "^13.0.1",
     "google-auth-library": "^9.14.0",
     "mssql": "^11.0.1",
     "multer": "^1.4.5-lts.1",
