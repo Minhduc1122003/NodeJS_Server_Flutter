@@ -2,11 +2,6 @@ const connection = require("../config/database");
 const sql = require("mssql");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
-const crypto = require('crypto');
-const momoConfig = require('../config/momo');
-const axios = require('axios');
-// const bcrypt = require("bcrypt");
-
 const crypto = require("crypto");
 const momoConfig = require("../config/momo");
 const axios = require("axios");
