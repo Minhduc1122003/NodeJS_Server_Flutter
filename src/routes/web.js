@@ -65,6 +65,7 @@ const { getHomepage,
   checkInBuyTicket,
   insertMovie,
   insertShowTime,
+  getThongkeNguoiDungMoi,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -85,6 +86,8 @@ route.get('/findAllBuyTicketByUserId', findAllBuyTicketByUserId);
 route.get('/getTop5RateMovie', getTop5RateMovie);
 route.get('/FindOneBuyTicketById', FindOneBuyTicketById);
 route.get('/checkInBuyTicket', checkInBuyTicket);
+route.get('/checkInBuyTicket', checkInBuyTicket);
+route.get('/getThongkeNguoiDungMoi', getThongkeNguoiDungMoi);
 
 
 

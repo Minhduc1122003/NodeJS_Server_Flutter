@@ -2667,6 +2667,46 @@ const insertShowTime = async (req, res) => {
   }
 };
 
+const getThongkeNguoiDungMoi = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận getThongkeNguoiDungMoi Flutter!");
+
+    // Lấy tham số Year từ query
+    const { Year } = req.query;
+    console.log(Year);
+
+    // Kiểm tra tham số đầu vào
+    if (!Year) {
+      return res.status(400).json({ message: "Thiếu tham số Year!" });
+    }
+
+    // Kết nối với cơ sở dữ liệu
+    pool = await sql.connect(connection);
+    console.log("Đã kết nối SQL Server");
+
+    // Thực hiện truy vấn gọi thủ tục GetUserStatisticsByYear
+    const result = await pool
+      .request()
+      .input("Year", sql.Int, Year) // Truyền tham số Year
+      .query(`
+        EXEC GetUserStatisticsByYear @Year;
+      `);
+
+    // Trả về kết quả truy vấn
+    res.status(200).json(result.recordset); // Chỉ trả về kết quả
+  } catch (error) {
+    console.error("Lỗi khi thực hiện truy vấn:", error);
+    res.status(500).json({
+      error: error.message,
+    });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
 
 module.exports = {
   getHomepage,
@@ -2718,4 +2758,5 @@ module.exports = {
   checkInBuyTicket,
   insertMovie,
   insertShowTime,
+  getThongkeNguoiDungMoi,
 };
