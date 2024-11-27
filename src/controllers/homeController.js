@@ -2843,43 +2843,46 @@ const insertShowTime = async (req, res) => {
 const getThongkeNguoiDungMoi = async (req, res) => {
   let pool;
   try {
-    console.log("Đã nhận getThongkeNguoiDungMoi Flutter!");
+      console.log("Đã nhận getThongkeNguoiDungMoi từ Flutter!");
 
-    // Lấy tham số Year từ query
-    const { Year } = req.query;
-    console.log(Year);
+      // Lấy các tham số từ request body
+      const { StartDate, EndDate, Role } = req.body;
 
-    // Kiểm tra tham số đầu vào
-    if (!Year) {
-      return res.status(400).json({ message: "Thiếu tham số Year!" });
-    }
+      // Kiểm tra nếu thiếu tham số
+      if (!StartDate || !EndDate || !Role) {
+          return res.status(400).json({ message: "Thiếu tham số StartDate, EndDate, hoặc Role trong request body" });
+      }
+ 
+      // Chuyển đổi StartDate và EndDate chỉ lấy ngày (YYYY-MM-DD)
+      const startDateOnly = StartDate.split("T")[0]; // Lấy phần trước "T"
+      const endDateOnly = EndDate.split("T")[0];
 
-    // Kết nối với cơ sở dữ liệu
-    pool = await sql.connect(connection);
-    console.log("Đã kết nối SQL Server");
+      // Kết nối tới SQL Server
+      pool = await sql.connect(connection);
+      console.log("Đang kết nối đến SQL Server");
 
-    // Thực hiện truy vấn gọi thủ tục GetUserStatisticsByYear
-    const result = await pool
-      .request()
-      .input("Year", sql.Int, Year) // Truyền tham số Year
-      .query(`
-        EXEC GetUserStatisticsByYear @Year;
-      `);
+      // Thực thi stored procedure với ngày định dạng YYYY-MM-DD
+      const result = await pool
+          .request()
+          .input("StartDate", sql.Date, startDateOnly) // Truyền ngày không kèm giờ
+          .input("EndDate", sql.Date, endDateOnly)     // Truyền ngày không kèm giờ
+          .input("Role", sql.Int, Role)
+          .query(`
+                EXEC GetUserRegistrationByDateRange @StartDate = @StartDate, @EndDate = @EndDate, @Role = @Role;
+          `);
 
-    // Trả về kết quả truy vấn
-    res.status(200).json(result.recordset); // Chỉ trả về kết quả
+      res.json(result.recordset);
   } catch (error) {
-    console.error("Lỗi khi thực hiện truy vấn:", error);
-    res.status(500).json({
-      error: error.message,
-    });
+      console.error("Lỗi khi lấy dữ liệu thống kê doanh thu:", error);
+      res.status(500).json({ message: "Lỗi Server", error: error.message });
   } finally {
-    if (pool) {
-      await pool.close();
-    }
+      if (pool) {
+          await pool.close();
+      }
   }
-
 };
+
+
 const getThongkeDoanhThu = async (req, res) => {
   let pool;
   try {
@@ -2893,6 +2896,11 @@ const getThongkeDoanhThu = async (req, res) => {
           return res.status(400).json({ message: "Thiếu tham số StartDate, EndDate, hoặc Role trong request body" });
       }
 
+      // Chuyển đổi StartDate và EndDate chỉ lấy ngày (YYYY-MM-DD)
+      const startDateOnly = StartDate.split("T")[0]; // Lấy phần trước "T"
+      const endDateOnly = EndDate.split("T")[0];
+
+
       // Kết nối tới SQL Server
       pool = await sql.connect(connection);
       console.log("Đang kết nối đến SQL Server");
@@ -2900,14 +2908,14 @@ const getThongkeDoanhThu = async (req, res) => {
       // Thực thi stored procedure GetRevenueByDate với các tham số StartDate, EndDate, và Role
       const result = await pool
           .request()
-          .input("StartDate", sql.Date, StartDate)   // Truyền tham số StartDate
-          .input("EndDate", sql.Date, EndDate)       // Truyền tham số EndDate
-          .input("Role", sql.Int, Role)              // Truyền tham số Role
+          .input("StartDate", sql.Date, startDateOnly) // Truyền ngày không kèm giờ
+          .input("EndDate", sql.Date, endDateOnly)     // Truyền ngày không kèm giờ
+          .input("Role", sql.Int, Role)               // Truyền tham số Role
           .query(`
                 EXEC GetRevenueByDate @StartDate = @StartDate, @EndDate = @EndDate, @Role = @Role;
           `);
 
-      // Trả về trực tiếp kết quả truy vấn mà không có message hay key "data"
+      // Trả về trực tiếp kết quả truy vấn
       res.json(result.recordset);
   } catch (error) {
       console.error("Lỗi khi lấy dữ liệu thống kê doanh thu:", error);

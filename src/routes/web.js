@@ -93,7 +93,6 @@ route.get('/momo-callback', momoCallback);
 route.get("/check-transaction-status", checkTransactionStatus);
 route.get('/checkInBuyTicket', checkInBuyTicket);
 route.get('/checkInBuyTicket', checkInBuyTicket);
-route.get('/getThongkeNguoiDungMoi', getThongkeNguoiDungMoi);
 
 
 
@@ -135,4 +134,6 @@ route.post('/changePasswordForEmail', changePasswordForEmail); //
 route.post('/insertMovie', insertMovie); // 
 route.post('/insertShowTime', insertShowTime); // 
 route.post('/getThongkeDoanhThu', getThongkeDoanhThu); // 
+route.post('/getThongkeNguoiDungMoi', getThongkeNguoiDungMoi);
+
 module.exports=route;
