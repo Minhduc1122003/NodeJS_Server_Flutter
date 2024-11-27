@@ -45,6 +45,7 @@ const getHomepage = async (req, res) => {
 }; 
 
 // Hàm xử lý cho route POST /findByViewID
+
 const findByViewID = async (req, res) => {
   console.log("Flutter has connected to login!");
 
@@ -55,7 +56,7 @@ const findByViewID = async (req, res) => {
 
   const { username, password } = req.body || {};
   console.log("Đã nhận dữ liệu từ Flutter!");
-  console.log(`Username: ${username}, Password: ${password}`);
+  console.log(`Username: ${username}`);
 
   let pool;
   try {
@@ -63,23 +64,27 @@ const findByViewID = async (req, res) => {
     pool = await sql.connect(connection);
     console.log("Đã kết nối database");
 
-    // Thực hiện truy vấn để tìm tài khoản
+    // Thực hiện truy vấn để lấy thông tin tài khoản theo username
     let result = await pool
       .request()
       .input("username", sql.VarChar, username)
-      .input("password", sql.VarChar, password)
-      .query(
-        "SELECT * FROM Users WHERE username = @username AND password = @password"
-      );
+      .query("SELECT * FROM Users WHERE username = @username");
 
-    // Kiểm tra xem có tài khoản nào không
+    // Kiểm tra xem username có tồn tại không
     if (result.recordset.length > 0) {
-      res
-        .status(200)
-        .json({ message: "Login successful", user: result.recordset[0] });
+      const user = result.recordset[0];
+
+      // So sánh mật khẩu đã mã hóa với mật khẩu người dùng nhập
+      const isPasswordMatch = await bcrypt.compare(password, user.Password);
+      if (isPasswordMatch) {
+        res.status(200).json({ message: "Login successful", user });
+      } else {
+        res.status(401).json({ message: "Invalid username or password" });
+        console.log("Mật khẩu không đúng");
+      }
     } else {
       res.status(401).json({ message: "Invalid username or password" });
-      console.log("khong tim thay du lieu");
+      console.log("Không tìm thấy username");
     }
   } catch (error) {
     console.error("Error fetching accounts:", error);
@@ -93,6 +98,7 @@ const findByViewID = async (req, res) => {
     }
   }
 };
+
 
 // Hàm xử lý cho route POST /findByViewID
 const findByViewIDUser = async (req, res) => {
@@ -254,6 +260,8 @@ const sendEmail = async (req, res) => {
 };
 
 // hàm tạo tài khoản
+const bcrypt = require("bcrypt");
+
 const createAccount = async (req, res) => {
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
@@ -264,6 +272,10 @@ const createAccount = async (req, res) => {
 
   let pool;
   try {
+    // Mã hóa mật khẩu
+    const saltRounds = 10; // Số vòng mã hóa
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     pool = await sql.connect(connection);
     console.log("Connected to database");
 
@@ -272,7 +284,7 @@ const createAccount = async (req, res) => {
     let result = await pool
       .request()
       .input("username", sql.VarChar(50), username)
-      .input("password", sql.VarChar(255), password) // Password nên là 255 để phù hợp với bảng
+      .input("password", sql.VarChar(255), hashedPassword) // Lưu mật khẩu mã hóa
       .input("email", sql.VarChar(155), email)
       .input("fullname", sql.NVarChar(155), fullname)
       .input("phoneNumber", sql.VarChar(20), phoneNumberStr) // Chỉnh lại kiểu dữ liệu phù hợp
@@ -282,9 +294,9 @@ const createAccount = async (req, res) => {
       .input("status", sql.NVarChar(20), "Đang hoạt động") // Default status
       .input("isDelete", sql.Bit, 0) // 0: false (mặc định)
       .query(`
-    INSERT INTO Users (UserName, Password, Email, FullName, PhoneNumber, Photo, Role, CreateDate, Status, IsDelete)
-    VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, @role, @createDate, @status, @isDelete)
-  `);
+        INSERT INTO Users (UserName, Password, Email, FullName, PhoneNumber, Photo, Role, CreateDate, Status, IsDelete)
+        VALUES (@username, @password, @email, @fullname, @phoneNumber, @photo, @role, @createDate, @status, @isDelete)
+      `);
 
     if (result.rowsAffected[0] > 0) {
       res.status(200).json({ message: "Account created successfully" });
