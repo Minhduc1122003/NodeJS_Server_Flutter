@@ -69,6 +69,7 @@ const { getHomepage,
   insertMovie,
   insertShowTime,
   getThongkeNguoiDungMoi,
+  getThongkeDoanhThu,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -133,5 +134,5 @@ route.post('/changePasswordForEmail', changePasswordForEmail); //
 
 route.post('/insertMovie', insertMovie); // 
 route.post('/insertShowTime', insertShowTime); // 
-
+route.post('/getThongkeDoanhThu', getThongkeDoanhThu); // 
 module.exports=route;

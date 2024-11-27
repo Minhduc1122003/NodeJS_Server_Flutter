@@ -2878,7 +2878,48 @@ const getThongkeNguoiDungMoi = async (req, res) => {
       await pool.close();
     }
   }
+
 };
+const getThongkeDoanhThu = async (req, res) => {
+  let pool;
+  try {
+      console.log("Đã nhận yêu cầu thống kê doanh thu từ Flutter!");
+
+      // Lấy các tham số từ request body
+      const { StartDate, EndDate, Role } = req.body;
+
+      // Kiểm tra nếu thiếu tham số
+      if (!StartDate || !EndDate || !Role) {
+          return res.status(400).json({ message: "Thiếu tham số StartDate, EndDate, hoặc Role trong request body" });
+      }
+
+      // Kết nối tới SQL Server
+      pool = await sql.connect(connection);
+      console.log("Đang kết nối đến SQL Server");
+
+      // Thực thi stored procedure GetRevenueByDate với các tham số StartDate, EndDate, và Role
+      const result = await pool
+          .request()
+          .input("StartDate", sql.Date, StartDate)   // Truyền tham số StartDate
+          .input("EndDate", sql.Date, EndDate)       // Truyền tham số EndDate
+          .input("Role", sql.Int, Role)              // Truyền tham số Role
+          .query(`
+                EXEC GetRevenueByDate @StartDate = @StartDate, @EndDate = @EndDate, @Role = @Role;
+          `);
+
+      // Trả về trực tiếp kết quả truy vấn mà không có message hay key "data"
+      res.json(result.recordset);
+  } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu thống kê doanh thu:", error);
+      res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+      // Đảm bảo đóng kết nối sau khi xử lý xong
+      if (pool) {
+          await pool.close();
+      }
+  }
+};
+
 
 
 module.exports = {
@@ -2933,7 +2974,7 @@ module.exports = {
   changePassword,
   changePasswordForEmail,
   insertMovie,
-
   insertShowTime,
   getThongkeNguoiDungMoi,
+  getThongkeDoanhThu,
 };
