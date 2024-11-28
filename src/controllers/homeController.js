@@ -2623,6 +2623,7 @@ const updateInfoUser = async (req, res) => {
   }
 };
 
+
 const changePassword = async (req, res) => {
   let pool;
   try {
@@ -2638,17 +2639,24 @@ const changePassword = async (req, res) => {
 
     // Kiểm tra các trường bắt buộc
     if (!UserId || !Password) {
-      return res.status(400).json({ message: "UserId and Password are required" });
+      return res
+        .status(400)
+        .json({ message: "UserId and Password are required" });
     }
+
+    // Mã hóa mật khẩu
+    const saltRounds = 10; // Số vòng mã hóa
+    const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
     // Kết nối SQL Server
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table Users");
 
     // Truy vấn để thay đổi mật khẩu người dùng
-    const result = await pool.request()
-      .input('UserId', sql.Int, UserId)
-      .input('Password', sql.NVarChar(255), Password) // Bảo vệ mật khẩu cần thêm mã hóa
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, UserId)
+      .input("Password", sql.NVarChar(255), hashedPassword) // Lưu mật khẩu đã mã hóa
       .query(`
         UPDATE Users
         SET Password = @Password
@@ -2672,6 +2680,7 @@ const changePassword = async (req, res) => {
     }
   }
 };
+
  
 
 
