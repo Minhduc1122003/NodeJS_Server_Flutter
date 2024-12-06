@@ -194,7 +194,7 @@ const sendEmail = async (req, res) => {
             overflow: hidden;
           }
           .header {
-            background: #6F3CD7;
+            background: #4F75FF;
             color: #ffffff;
             padding: 20px;
             text-align: center;
@@ -288,7 +288,7 @@ const createAccount = async (req, res) => {
       .input("email", sql.VarChar(155), email)
       .input("fullname", sql.NVarChar(155), fullname)
       .input("phoneNumber", sql.VarChar(20), phoneNumberStr) // Chỉnh lại kiểu dữ liệu phù hợp
-      .input("photo", sql.VarChar(50), null)
+      .input("photo", sql.VarChar(200), "https://firebasestorage.googleapis.com/v0/b/movieticket-77cf5.appspot.com/o/aef0b5d5-c0fa-475c-86f9-fc5106a8f046-avatar-null.jpg?alt=media")
       .input("role", sql.Int, 0) // Giá trị mặc định cho khách hàng
       .input("createDate", sql.DateTime, currentDate)
       .input("status", sql.NVarChar(20), "Đang hoạt động") // Default status
@@ -2305,7 +2305,7 @@ const findAllBuyTicketByUserId = async (req, res) => {
     const transaction = pool.transaction();
 
     await transaction.begin(); // Bắt đầu transaction
-
+ 
     try {
       const request = transaction.request();
       const response = await request
@@ -2314,6 +2314,7 @@ const findAllBuyTicketByUserId = async (req, res) => {
 
       await transaction.commit(); // Commit transaction nếu thành công
       res.status(200).json(response.recordset);
+
     } catch (innerError) {
       await transaction.rollback(); // Rollback nếu có lỗi trong transaction
       console.error("Lỗi trong transaction:", innerError);
@@ -2355,7 +2356,7 @@ LEFT JOIN
     Rate r ON m.MovieID = r.MovieID
 WHERE 
     m.StatusMovie = N'Đang chiếu' 
-GROUP BY 
+GROUP BY  
     m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
     m.PosterUrl, m.TrailerUrl, m.Age,  -- Thêm Age vào GROUP BY
     m.SubTitle, m.Voiceover, 
@@ -2417,6 +2418,39 @@ const FindOneBuyTicketById = async (req, res) => {
     }
   }
 };
+
+const deleteOneBuyTicketById = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận deleteOneBuyTicketById Flutter!");
+
+    // Lấy BuyTicketId từ query string
+    const { BuyTicketId } = req.query;
+
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table BuyTicketInfo");
+
+    await pool
+      .request()
+      .input("BuyTicketId", sql.VarChar, BuyTicketId) // Đảm bảo kiểu dữ liệu tương ứng
+      .query(`
+      EXEC DeleteBuyTicket @BuyTicketId
+      `);
+
+    // Nếu không lỗi thì trả về thành công
+    res.status(200).send("Successfully"); // Trả về chuỗi "Successfully"
+  } catch (error) {
+    console.error("Lỗi khi xóa vé:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
+
 const insertRate = async (req, res) => {
   let pool;
   try {
@@ -2909,11 +2943,11 @@ const getThongkeDoanhThu = async (req, res) => {
       const startDateOnly = StartDate.split("T")[0]; // Lấy phần trước "T"
       const endDateOnly = EndDate.split("T")[0];
 
-
+ 
       // Kết nối tới SQL Server
       pool = await sql.connect(connection);
       console.log("Đang kết nối đến SQL Server");
-
+ 
       // Thực thi stored procedure GetRevenueByDate với các tham số StartDate, EndDate, và Role
       const result = await pool
           .request()
@@ -2936,6 +2970,8 @@ const getThongkeDoanhThu = async (req, res) => {
       }
   }
 };
+
+
 
 
 
@@ -2994,4 +3030,5 @@ module.exports = {
   insertShowTime,
   getThongkeNguoiDungMoi,
   getThongkeDoanhThu,
+  deleteOneBuyTicketById,
 };

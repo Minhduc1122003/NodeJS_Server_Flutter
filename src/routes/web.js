@@ -70,6 +70,7 @@ const { getHomepage,
   insertShowTime,
   getThongkeNguoiDungMoi,
   getThongkeDoanhThu,
+  deleteOneBuyTicketById,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -93,6 +94,7 @@ route.get('/momo-callback', momoCallback);
 route.get("/check-transaction-status", checkTransactionStatus);
 route.get('/checkInBuyTicket', checkInBuyTicket);
 route.get('/checkInBuyTicket', checkInBuyTicket);
+route.get('/deleteOneBuyTicketById', deleteOneBuyTicketById);
 
 
 
