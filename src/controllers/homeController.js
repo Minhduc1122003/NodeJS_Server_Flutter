@@ -2,14 +2,19 @@ const connection = require("../config/database");
 const sql = require("mssql");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
-const crypto = require("crypto");
-const momoConfig = require("../config/momo");
-const axios = require("axios");
+const crypto = require('crypto');
+const momoConfig = require('../config/momo');
+const axios = require('axios');
+// const bcrypt = require("bcrypt");
+
+// const crypto = require("crypto");
+// const momoConfig = require("../config/momo");
+// const axios = require("axios");
 const poolPromise = new sql.ConnectionPool(connection)
   .connect()
   .then((pool) => {
     console.log("Connected to SQL Server");
-    return pool;
+    return pool; 
   })
   .catch((err) => {
     console.error("Database Connection Failed! Bad Config: ", err);
@@ -1041,7 +1046,7 @@ const createFilm = async (req, res) => {
     }
   }
 };
-
+ 
 const getUserListForAdmin = async (req, res) => {
   let pool;
   try {
@@ -1051,14 +1056,14 @@ const getUserListForAdmin = async (req, res) => {
     pool = await sql.connect(connection);
     console.log("Connecting to SQL Server Table getUserListForAdmin");
     const result = await pool.request().query(`
-      select * from Users where Role = 1  
-      `);
+      SELECT * FROM Users WHERE Role IN (0, 1)
+    `);
 
     // Gửi dữ liệu theo định dạng JSON
     res.setHeader("Content-Type", "application/json");
     res.json(result.recordset);
   } catch (error) {
-    console.error("Lỗi khi truy vấn lịch chiếu:", error);
+    console.error("Lỗi khi truy vấn nhân viên:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
   } finally {
     if (pool) {
@@ -1067,7 +1072,7 @@ const getUserListForAdmin = async (req, res) => {
   }
 };
 
-const createShifts = async (req, res) => {
+const createShifts = async (req, res) => { 
   let pool;
   try {
     console.log("Đã nhận createShifts Flutter!");
@@ -1075,7 +1080,7 @@ const createShifts = async (req, res) => {
     // Kiểm tra nếu body của request không tồn tại
     if (!req.body) {
       return res.status(400).json({ message: "Request body is missing" });
-    }
+    } 
 
     // Lấy dữ liệu từ request body
     const { ShiftName, StartTime, EndTime, IsCrossDay, Status } = req.body;
@@ -2937,6 +2942,57 @@ const getThongkeDoanhThu = async (req, res) => {
   }
 };
 
+const updateUserStatus = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận updateUserStatus từ Flutter!");
+
+    // Kiểm tra request body
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { UserId, Status } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!UserId || !Status) {
+      return res.status(400).json({ message: "UserId và Status là bắt buộc" });
+    }
+
+    // Kết nối SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server Table Users");
+
+    // Truy vấn để cập nhật trạng thái người dùng
+    const result = await pool.request()
+      .input('UserId', sql.Int, UserId)
+      .input('Status', sql.NVarChar(50), Status)
+      .query(`
+        UPDATE Users
+        SET Status = @Status
+        WHERE UserId = @UserId
+      `);
+
+    // Kiểm tra kết quả
+    if (result.rowsAffected[0] > 0) {
+      res.status(200).json({ message: "User status updated successfully" });
+      console.log("Trạng thái người dùng đã được cập nhật thành công:", result);
+    } else {
+      res.status(404).json({ message: "User not found or no changes made" });
+    }
+  } catch (error) {
+    console.error("Lỗi khi cập nhật trạng thái người dùng:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  } finally {
+    // Đảm bảo đóng kết nối
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
 
 
 module.exports = {
@@ -2994,4 +3050,5 @@ module.exports = {
   insertShowTime,
   getThongkeNguoiDungMoi,
   getThongkeDoanhThu,
+  updateUserStatus,
 };

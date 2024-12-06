@@ -7,7 +7,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
-  console.log(file.mimetype);  // In ra kiểu mime của file
+  console.log(file.mimetype);  // In ra kiểu mime của file 
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
@@ -70,6 +70,7 @@ const { getHomepage,
   insertShowTime,
   getThongkeNguoiDungMoi,
   getThongkeDoanhThu,
+  updateUserStatus,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -135,5 +136,8 @@ route.post('/insertMovie', insertMovie); //
 route.post('/insertShowTime', insertShowTime); // 
 route.post('/getThongkeDoanhThu', getThongkeDoanhThu); // 
 route.post('/getThongkeNguoiDungMoi', getThongkeNguoiDungMoi);
+route.post('/updateUserStatus', updateUserStatus);
+
+
 
 module.exports=route;
