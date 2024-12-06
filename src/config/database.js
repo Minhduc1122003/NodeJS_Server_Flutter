@@ -4,6 +4,7 @@ const { Connection, Request } = require('tedious');
 // Cấu hình kết nối
 
 // local:
+//local:
 const config = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -47,5 +48,4 @@ const config = {
     //   };
       
       
-
 module.exports = config;
