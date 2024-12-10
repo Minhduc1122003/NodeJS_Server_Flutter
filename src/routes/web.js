@@ -72,6 +72,9 @@ const { getHomepage,
   getThongkeDoanhThu,
   deleteOneBuyTicketById,
   updateUserStatus,
+  insertAttendance,
+  checkAttendance,
+  checkOutAttendance,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -139,7 +142,8 @@ route.post('/insertShowTime', insertShowTime); //
 route.post('/getThongkeDoanhThu', getThongkeDoanhThu); // 
 route.post('/getThongkeNguoiDungMoi', getThongkeNguoiDungMoi);
 route.post('/updateUserStatus', updateUserStatus);
-
-
+route.post('/insertAttendance', insertAttendance);
+route.post('/checkAttendance', checkAttendance);
+route.post('/checkOutAttendance', checkOutAttendance);
 
 module.exports=route;

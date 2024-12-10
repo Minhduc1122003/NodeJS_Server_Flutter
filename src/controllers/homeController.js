@@ -520,79 +520,79 @@ const findByViewMovieID = async (req, res) => {
       .request()
       .input("movieId", sql.Int, movieId)
       .input("userId", sql.Int, userId).query(`
-WITH RatingCounts AS (
-    SELECT 
-        MovieID,
-        COUNT(DISTINCT IdRate) AS ReviewCount,
-        SUM(CASE WHEN Rating BETWEEN 9 AND 10 THEN 1 ELSE 0 END) AS Rating_9_10,
-        SUM(CASE WHEN Rating BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS Rating_7_8,
-        SUM(CASE WHEN Rating BETWEEN 5 AND 6 THEN 1 ELSE 0 END) AS Rating_5_6,
-        SUM(CASE WHEN Rating BETWEEN 3 AND 4 THEN 1 ELSE 0 END) AS Rating_3_4,
-        SUM(CASE WHEN Rating BETWEEN 1 AND 2 THEN 1 ELSE 0 END) AS Rating_1_2
-    FROM Rate
-    WHERE MovieID = 1
-    GROUP BY MovieID
-)
 
-SELECT 
-    m.MovieID,
-    m.Title,
-    m.Description,
-    m.Duration,
-    m.ReleaseDate,
-    m.PosterUrl,
-    m.TrailerUrl,
-    m.Age,
-    m.SubTitle,
-    m.Voiceover,
-    m.Price,
-    (SELECT STRING_AGG(g.GenreName, ', ') 
-     FROM MovieGenre mg 
-     JOIN Genre g ON mg.IdGenre = g.IdGenre 
-     WHERE mg.MovieID = m.MovieID
-    ) AS Genres,
-    c.CinemaName,
-    c.Address AS CinemaAddress,
-    STRING_AGG(r.Content, ' | ') AS ReviewContents,
-    ROUND(AVG(r.Rating), 2) AS AverageRating,
-    COALESCE(rc.ReviewCount, 0) AS ReviewCount,
-    COALESCE(rc.Rating_9_10, 0) AS Rating_9_10,
-    COALESCE(rc.Rating_7_8, 0) AS Rating_7_8,
-    COALESCE(rc.Rating_5_6, 0) AS Rating_5_6,
-    COALESCE(rc.Rating_3_4, 0) AS Rating_3_4,
-    COALESCE(rc.Rating_1_2, 0) AS Rating_1_2,
-    CASE 
-      WHEN f.MovieID IS NOT NULL THEN CAST(1 AS BIT) 
-      ELSE CAST(0 AS BIT) 
-    END AS IsFavourite
-FROM 
-    Movies m
-LEFT JOIN 
-    MovieGenre mg ON m.MovieID = mg.MovieID
-LEFT JOIN 
-    Genre g ON mg.IdGenre = g.IdGenre
-LEFT JOIN 
-    Cinemas c ON m.CinemaID = c.CinemaID
-LEFT JOIN 
-    Rate r ON m.MovieID = r.MovieID
-LEFT JOIN 
-    Users u ON r.UserId = u.UserId
-LEFT JOIN 
-    Favourite f ON m.MovieID = f.MovieID AND f.UserId = @userId
-LEFT JOIN 
-    RatingCounts rc ON m.MovieID = rc.MovieID
-WHERE 
-    m.MovieID = @movieId 
-GROUP BY 
-    m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
-    m.PosterUrl, m.TrailerUrl, m.Age, 
-    m.SubTitle, m.Voiceover, 
-    m.Price, 
-    c.CinemaName, 
-    c.Address, 
-    f.MovieID, rc.ReviewCount, rc.Rating_9_10, rc.Rating_7_8, rc.Rating_5_6, rc.Rating_3_4, rc.Rating_1_2;
-
-
+        WITH RatingCounts AS (
+          SELECT 
+              MovieID,
+              COUNT(DISTINCT IdRate) AS ReviewCount,
+              SUM(CASE WHEN Rating BETWEEN 9 AND 10 THEN 1 ELSE 0 END) AS Rating_9_10,
+              SUM(CASE WHEN Rating BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS Rating_7_8,
+              SUM(CASE WHEN Rating BETWEEN 5 AND 6 THEN 1 ELSE 0 END) AS Rating_5_6,
+              SUM(CASE WHEN Rating BETWEEN 3 AND 4 THEN 1 ELSE 0 END) AS Rating_3_4,
+              SUM(CASE WHEN Rating BETWEEN 1 AND 2 THEN 1 ELSE 0 END) AS Rating_1_2
+          FROM Rate
+          WHERE MovieID = @movieId
+          GROUP BY MovieID
+      )
+      
+      SELECT 
+          m.MovieID,
+          m.Title,
+          m.Description,
+          m.Duration,
+          m.ReleaseDate,
+          m.PosterUrl,
+          m.TrailerUrl,
+          m.Age,
+          m.SubTitle,
+          m.Voiceover,
+          m.Price,
+          (SELECT STRING_AGG(g.GenreName, ', ') 
+           FROM MovieGenre mg 
+           JOIN Genre g ON mg.IdGenre = g.IdGenre 
+           WHERE mg.MovieID = m.MovieID
+          ) AS Genres,
+          c.CinemaName,
+          c.Address AS CinemaAddress,
+          STRING_AGG(r.Content, ' | ') AS ReviewContents,
+          ROUND(AVG(r.Rating), 2) AS AverageRating,
+          COALESCE(rc.ReviewCount, 0) AS ReviewCount,
+          COALESCE(rc.Rating_9_10, 0) AS Rating_9_10,
+          COALESCE(rc.Rating_7_8, 0) AS Rating_7_8,
+          COALESCE(rc.Rating_5_6, 0) AS Rating_5_6,
+          COALESCE(rc.Rating_3_4, 0) AS Rating_3_4,
+          COALESCE(rc.Rating_1_2, 0) AS Rating_1_2,
+          CASE 
+            WHEN f.MovieID IS NOT NULL THEN CAST(1 AS BIT) 
+            ELSE CAST(0 AS BIT) 
+          END AS IsFavourite
+      FROM 
+          Movies m
+      LEFT JOIN 
+          MovieGenre mg ON m.MovieID = mg.MovieID
+      LEFT JOIN 
+          Genre g ON mg.IdGenre = g.IdGenre
+      LEFT JOIN 
+          Cinemas c ON m.CinemaID = c.CinemaID
+      LEFT JOIN 
+          Rate r ON m.MovieID = r.MovieID
+      LEFT JOIN 
+          Users u ON r.UserId = u.UserId
+      LEFT JOIN 
+          Favourite f ON m.MovieID = f.MovieID AND f.UserId = @userId
+      LEFT JOIN 
+          RatingCounts rc ON m.MovieID = rc.MovieID
+      WHERE 
+          m.MovieID = @movieId 
+      GROUP BY 
+          m.MovieID, m.Title, m.Description, m.Duration, m.ReleaseDate, 
+          m.PosterUrl, m.TrailerUrl, m.Age, 
+          m.SubTitle, m.Voiceover, 
+          m.Price, 
+          c.CinemaName, 
+          c.Address, 
+          f.MovieID, rc.ReviewCount, rc.Rating_9_10, rc.Rating_7_8, rc.Rating_5_6, rc.Rating_3_4, rc.Rating_1_2;
+      
 
 
       `);
@@ -861,6 +861,165 @@ const insertBuyTicket = async (req, res) => {
     }
   }
 };
+const insertAttendance = async (req, res) => {
+  let pool;
+  try {
+    // Lấy dữ liệu từ request body và kiểm tra
+    const {
+      UserId,
+      ShiftId,
+      Latitude,
+      Longitude,
+      Location,
+      IsLate,
+      IsEarlyLeave,
+    } = req.body;
+
+    if (
+      !UserId ||
+      !ShiftId ||
+      !Latitude ||
+      !Longitude ||
+      !Location ||
+      IsLate === undefined ||
+      IsEarlyLeave === undefined
+    ) {
+      return res.status(400).json({ message: "Dữ liệu không hợp lệ" });
+    }
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server");
+
+    // Gọi stored procedure
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, UserId)
+      .input("ShiftId", sql.Int, ShiftId)
+      .input("Latitude", sql.VarChar(50), Latitude)
+      .input("Longitude", sql.VarChar(50), Longitude)
+      .input("Location", sql.NVarChar(255), Location)
+      .input("IsLate", sql.Bit, IsLate)
+      .input("IsEarlyLeave", sql.Bit, IsEarlyLeave)
+      .query(
+        `EXEC InsertAttendance @UserId, @ShiftId, @Latitude, @Longitude, @Location, @IsLate, @IsEarlyLeave`
+      );
+
+    // Trả kết quả phản hồi
+    res.status(200).json({
+      message: "Chấm công thành công",
+      data: result.recordset,
+    });
+  } catch (error) {
+    console.error("Lỗi khi truy vấn:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const checkAttendance = async (req, res) => {
+  let pool;
+  try {
+    // Lấy dữ liệu từ request body và kiểm tra
+    const { UserId } = req.body;
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("checkAttendance");
+    console.log("Connecting to SQL Server");
+
+    // Gọi stored procedure
+    const result = await pool
+      .request()
+      .input("UserId", sql.Int, UserId)
+      .query(
+        `SELECT 
+    A.*,
+    S.ShiftName,
+    S.StartTime AS ShiftStartTime,
+    S.EndTime AS ShiftEndTime
+FROM 
+    Attendance A
+JOIN 
+    Shifts S ON A.ShiftId = S.ShiftId
+WHERE 
+    A.UserId = 2 
+    AND A.Status = N'Chưa ra ca'`
+      );
+
+    // Kiểm tra và trả về kết quả
+    if (result.recordset && result.recordset.length > 0) {
+      res.status(200).json({
+        data: result.recordset,
+      });
+    } else {
+      res.status(200).json({
+        data: [], // Trả về mảng rỗng nếu không có kết quả
+      });
+    }
+  } catch (error) {
+    console.error("Lỗi khi truy vấn:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+const checkOutAttendance = async (req, res) => {
+  let pool;
+  try {
+    // Lấy dữ liệu từ request body
+    const { AttendanceId } = req.body;
+
+    if (!AttendanceId) {
+      return res.status(400).json({ message: "AttendanceId là bắt buộc." });
+    }
+
+    // Kết nối đến SQL Server
+    pool = await sql.connect(connection);
+    console.log("Connecting to SQL Server");
+
+    // Thực hiện cập nhật CheckOutTime và Status
+    const updateResult = await pool
+      .request()
+      .input("AttendanceId", sql.Int, AttendanceId)
+      .input("CheckOutTime", sql.DateTime, new Date()) // Giờ hiện tại
+      .input("Status", sql.NVarChar, "Hoàn tất") // Trạng thái mới
+      .query(`
+        UPDATE Attendance
+        SET 
+            CheckOutTime = @CheckOutTime,
+            Status = @Status
+        WHERE 
+            AttendanceId = @AttendanceId
+      `);
+
+    // Kiểm tra số hàng bị ảnh hưởng
+    if (updateResult.rowsAffected[0] > 0) {
+      res.status(200).json({
+        message: "Cập nhật thông tin ra ca thành công.",
+      });
+    } else {
+      res.status(404).json({
+        message: "Không tìm thấy AttendanceId phù hợp.",
+      });
+    }
+  } catch (error) {
+    console.error("Lỗi khi truy vấn:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
+  }
+};
+
+
 
 const getShowtimeListForAdmin = async (req, res) => {
   let pool;
@@ -940,7 +1099,7 @@ const uploadImage = async (req, res) => {
     console.error("Controller error:", error.message);
     return res.status(500).json({ error: "Error uploading file." });
   }
-};
+}; 
 
 
 // ----------------- SOCKET IO -----------------------
@@ -2390,7 +2549,7 @@ ORDER BY
 const FindOneBuyTicketById = async (req, res) => {
   let pool;
   try {
-    console.log("Đã nhận updateSatusBuyTicketInfo Flutter!");
+    console.log("Đã nhận FindOneBuyTicketById Flutter!");
 
     // Lấy BuyTicketId từ query string
     const { BuyTicketId } = req.query;
@@ -2412,6 +2571,8 @@ const FindOneBuyTicketById = async (req, res) => {
       EXEC FindOneBuyTicketById @BuyTicketId
 
       `);
+      console.log(BuyTicketId);
+      console.log(result.recordset);
 
     res.status(200).json({ data: result.recordset });
   } catch (error) {
@@ -2968,11 +3129,11 @@ const getThongkeDoanhThu = async (req, res) => {
   } catch (error) {
       console.error("Lỗi khi lấy dữ liệu thống kê doanh thu:", error);
       res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
+  } finally { 
       // Đảm bảo đóng kết nối sau khi xử lý xong
       if (pool) {
           await pool.close();
-      }
+      } 
   }
 };
 
@@ -3088,4 +3249,7 @@ module.exports = {
   getThongkeDoanhThu,
   deleteOneBuyTicketById,
   updateUserStatus,
+  insertAttendance,
+  checkAttendance,
+  checkOutAttendance,
 };
