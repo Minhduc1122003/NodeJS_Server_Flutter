@@ -3109,11 +3109,19 @@ const getThongkeDoanhThu = async (req, res) => {
       const startDateOnly = StartDate.split("T")[0]; // Lấy phần trước "T"
       const endDateOnly = EndDate.split("T")[0];
 
- 
+      // Tính toán tuần trước
+      const prevWeekStartDate = new Date(startDateOnly);
+      prevWeekStartDate.setDate(prevWeekStartDate.getDate() - 7); // Lùi lại 7 ngày
+      const prevWeekEndDate = new Date(endDateOnly);
+      prevWeekEndDate.setDate(prevWeekEndDate.getDate() - 7); // Lùi lại 7 ngày
+
+      // Định dạng ngày tuần trước (YYYY-MM-DD)
+      const prevWeekStartDateStr = prevWeekStartDate.toISOString().split("T")[0];
+      const prevWeekEndDateStr = prevWeekEndDate.toISOString().split("T")[0];
+
       // Kết nối tới SQL Server
       pool = await sql.connect(connection);
-      console.log("Đang kết nối đến SQL Server");
- 
+
       // Thực thi stored procedure GetRevenueByDate với các tham số StartDate, EndDate, và Role
       const result = await pool
           .request()
@@ -3121,11 +3129,35 @@ const getThongkeDoanhThu = async (req, res) => {
           .input("EndDate", sql.Date, endDateOnly)     // Truyền ngày không kèm giờ
           .input("Role", sql.Int, Role)               // Truyền tham số Role
           .query(`
-                EXEC GetRevenueByDate @StartDate = @StartDate, @EndDate = @EndDate, @Role = @Role;
+              EXEC GetRevenueByDate @StartDate = @StartDate, @EndDate = @EndDate, @Role = @Role;
           `);
 
-      // Trả về trực tiếp kết quả truy vấn
-      res.json(result.recordset);
+      // Truy vấn tổng doanh thu tuần trước
+      const prevWeekResult = await pool
+          .request()
+          .input("StartDate", sql.Date, prevWeekStartDateStr) // Tuần trước bắt đầu
+          .input("EndDate", sql.Date, prevWeekEndDateStr)     // Tuần trước kết thúc
+          .input("Role", sql.Int, Role)                      // Truyền tham số Role
+          .query(`
+              SELECT COALESCE(SUM(bti.TotalPrice + ISNULL(tcl.ComboQuantity * c.Price, 0)), 0) AS TotalPreviousWeekRevenue
+              FROM BuyTicketInfo bti
+              LEFT JOIN BuyTicket bt ON bt.BuyTicketId = bti.BuyTicketId
+              LEFT JOIN Users u ON u.UserID = bt.UserID
+              LEFT JOIN TicketComboLink tcl ON tcl.BuyTicketInfoId = bti.BuyTicketInfoId
+              LEFT JOIN ComBo c ON c.ComboID = tcl.ComboID
+              WHERE (u.Role = @Role OR u.Role IS NULL)
+              AND CAST(bti.CreateDate AS DATE) BETWEEN @StartDate AND @EndDate
+              AND bti.Status IN (N'Đã thanh toán', N'Ðã thanh toán');
+          `);
+
+      // Gắn tổng tiền tuần trước vào kết quả
+      const response = {
+          data: result.recordset,
+          totalPreviousWeekRevenue: prevWeekResult.recordset[0].TotalPreviousWeekRevenue,
+      };
+
+      // Trả về kết quả
+      res.json(response);
   } catch (error) {
       console.error("Lỗi khi lấy dữ liệu thống kê doanh thu:", error);
       res.status(500).json({ message: "Lỗi Server", error: error.message });
@@ -3136,6 +3168,7 @@ const getThongkeDoanhThu = async (req, res) => {
       } 
   }
 };
+
 
 const updateUserStatus = async (req, res) => {
   let pool;
