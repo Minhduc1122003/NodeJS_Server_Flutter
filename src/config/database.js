@@ -40,8 +40,8 @@ const { Connection, Request } = require('tedious');
           trustServerCertificate: true,
         },
         pool: {
-            max: 200, // Tăng số lượng kết nối tối đa
-            min: 5,  // Đặt số lượng kết nối tối thiểu
+            max: 2000, // Tăng số lượng kết nối tối đa
+            min: 30,  // Đặt số lượng kết nối tối thiểu
             idleTimeoutMillis: 200000, // Tăng thời gian chờ trước khi hủy kết nối
         }, 
         requestTimeout: 60000, // Tăng thời gian chờ truy vấn
