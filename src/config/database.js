@@ -45,7 +45,7 @@ const { Connection, Request } = require('tedious');
             idleTimeoutMillis: 200000, // Tăng thời gian chờ trước khi hủy kết nối
         }, 
         requestTimeout: 60000, // Tăng thời gian chờ truy vấn
-        connectionTimeout: 30000, // Tăng thời gian chờ kết nối
+        connectionTimeout: 60000, // Tăng thời gian chờ kết nối
         
       };
       
