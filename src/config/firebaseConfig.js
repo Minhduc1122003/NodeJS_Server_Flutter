@@ -2,7 +2,7 @@ const admin = require('firebase-admin');
 const path = require('path');
 
 // Đường dẫn tới file serviceAccountKey.json
-const serviceAccountPath = path.resolve(__dirname, 'movieticket-77cf5-firebase-adminsdk-aiuuk-3d2fb82b3c.json');
+const serviceAccountPath = path.resolve(__dirname, 'movieticket-77cf5-firebase-adminsdk-aiuuk-a6b3349400.json');
 
 // Kiểm tra xem Firebase Admin SDK đã được khởi tạo chưa
 if (!admin.apps.length) {

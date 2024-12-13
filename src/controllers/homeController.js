@@ -5,11 +5,7 @@ require("dotenv").config();
 const crypto = require('crypto');
 const momoConfig = require('../config/momo');
 const axios = require('axios');
-// const bcrypt = require("bcrypt");
 
-// const crypto = require("crypto");
-// const momoConfig = require("../config/momo");
-// const axios = require("axios");
 const poolPromise = new sql.ConnectionPool(connection)
   .connect()
   .then((pool) => {
@@ -22,14 +18,14 @@ const poolPromise = new sql.ConnectionPool(connection)
   });
 // Hàm xử lý cho route GET /
 const getHomepage = async (req, res) => {
-  let pool;
+  let pool; 
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server");
 
     // Thực hiện một truy vấn đơn giản
-    let result = await pool.request().query("SELECT * FROM accounts");
+    let result = await pool.request().query("SELECT * FROM Users");
 
     // Gửi dữ liệu theo định dạng JSON tự động với format dễ đọc
     res.setHeader("Content-Type", "application/json");
@@ -66,7 +62,7 @@ const findByViewID = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để lấy thông tin tài khoản theo username
@@ -121,7 +117,7 @@ const findByViewIDUser = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để tìm tài khoản
@@ -281,7 +277,7 @@ const createAccount = async (req, res) => {
     const saltRounds = 10; // Số vòng mã hóa
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connected to database");
 
     const currentDate = new Date().toISOString();
@@ -337,7 +333,7 @@ const getAllUserData = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     // Thực hiện truy vấn để lấy tất cả người dùng trừ user có `username` đã cho
     let result = await pool.request().input("username", sql.VarChar, username)
@@ -374,7 +370,7 @@ const getMoviesDangChieu = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
     let result = await pool.request().query(`
@@ -437,7 +433,7 @@ const getMoviesSapChieu = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server");
 
     // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
@@ -513,7 +509,7 @@ const findByViewMovieID = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     // Thực hiện truy vấn để tìm thông tin phim dựa trên MovieID và kiểm tra xem có trong Favourite không
     let result = await pool
@@ -594,7 +590,6 @@ const findByViewMovieID = async (req, res) => {
           f.MovieID, rc.ReviewCount, rc.Rating_9_10, rc.Rating_7_8, rc.Rating_5_6, rc.Rating_3_4, rc.Rating_1_2;
       
 
-
       `);
 
     // Kiểm tra xem có dữ liệu phim nào không
@@ -633,7 +628,7 @@ const addFavourire = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để chèn dữ liệu vào bảng Favourite
@@ -649,6 +644,8 @@ const addFavourire = async (req, res) => {
     console.log("Favourite added successfully");
   } catch (error) {
     console.error("Error adding favourite:", error);
+
+      
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
@@ -674,7 +671,7 @@ const removeFavourire = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     // Thực hiện truy vấn để xóa dữ liệu từ bảng Favourite
     const result = await pool
@@ -722,7 +719,7 @@ const getShowtime = async (req, res) => {
     console.log("Time:", time);
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     const result = await pool
       .request()
@@ -777,7 +774,7 @@ const getChair = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     // Thực hiện truy vấn để lấy danh sách ghế
     const result = await pool
@@ -832,7 +829,7 @@ const insertBuyTicket = async (req, res) => {
     } = req.body;
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server");
 
     // Prepare and execute the stored procedure with dynamic values
@@ -888,7 +885,7 @@ const insertAttendance = async (req, res) => {
     }
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server");
 
     // Gọi stored procedure
@@ -927,7 +924,7 @@ const checkAttendance = async (req, res) => {
     const { UserId } = req.body;
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("checkAttendance");
     console.log("Connecting to SQL Server");
 
@@ -981,7 +978,7 @@ const checkOutAttendance = async (req, res) => {
     }
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server");
 
     // Thực hiện cập nhật CheckOutTime và Status
@@ -1025,7 +1022,7 @@ const getShowtimeListForAdmin = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table getShowtimeListForAdmin");
     const result = await pool.request().query(`
        SELECT 
@@ -1113,7 +1110,7 @@ const getConversations = async (req, res) => {
 
   let pool;
   try {
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     // Truy vấn dữ liệu từ bảng Conversations và lấy thông tin tin nhắn mới nhất và hình ảnh của người còn lại
     const result = await pool.request().input("UserId", sql.Int, userId).query(`
@@ -1176,7 +1173,7 @@ const createFilm = async (req, res) => {
     const seatIDsString = Array.isArray(seatIDs) ? seatIDs.join(",") : seatIDs; // Chuyển thành chuỗi
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Showtime");
 
     // Prepare and execute the stored procedure with dynamic values
@@ -1212,7 +1209,7 @@ const getUserListForAdmin = async (req, res) => {
     console.log("Đã nhận getUserListForAdmin Flutter!");
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table getUserListForAdmin");
     const result = await pool.request().query(`
       SELECT * FROM Users WHERE Role IN (0, 1)
@@ -1273,7 +1270,7 @@ const createShifts = async (req, res) => {
         .json({ message: "Invalid time format for StartTime or EndTime" });
     }
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Shifts");
 
     const result = await pool
@@ -1351,7 +1348,7 @@ const createLocation = async (req, res) => {
       ShiftId,
     });
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Locations");
 
     const result = await pool
@@ -1415,7 +1412,7 @@ const createWorkSchedules = async (req, res) => {
       DaysOfWeek: formattedDaysOfWeek,
     });
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table WorkSchedules");
 
     const result = await pool
@@ -1451,7 +1448,7 @@ const getAllListShift = async (req, res) => {
     console.log("Đã nhận getAllListShift Flutter!");
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table getUserListForAdmin");
     const result = await pool.request().query(`
       SELECT * FROM Shifts 
@@ -1476,7 +1473,7 @@ const getAllListLocation = async (req, res) => {
     console.log("Đã nhận getAllListLocation Flutter!");
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table getUserListForAdmin");
     const result = await pool.request().query(`
 
@@ -1524,7 +1521,7 @@ const getAllWorkSchedulesByID = async (req, res) => {
     console.log("Đã nhận getAllWorkSchedulesByID Flutter!");
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     const result = await pool
       .request()
@@ -1565,7 +1562,7 @@ const getShiftForAttendance = async (req, res) => {
     console.log("Đã nhận getShiftForAttendance Flutter!");
 
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table WorkSchedules");
 
     console.log("UserId:", userId);
@@ -1609,7 +1606,7 @@ const getAllIsCombo = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connected to database successfully");
 
     // Thực hiện truy vấn để lấy tất cả combo
@@ -1655,7 +1652,7 @@ const getAllIsNotCombo = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connected to database successfully");
 
     // Thực hiện truy vấn để lấy tất cả combo
@@ -1738,7 +1735,7 @@ const updateShifts = async (req, res) => {
         .json({ message: "Invalid time format for StartTime or EndTime" });
     }
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Shifts");
 
     const result = await pool
@@ -1787,7 +1784,7 @@ const removeShifts = async (req, res) => {
     // Lấy dữ liệu từ request body
     const { ShiftId } = req.body;
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Shifts");
 
     // Xóa các bản ghi trong bảng Attendance trước
@@ -1892,7 +1889,7 @@ const updateLocationShifts = async (req, res) => {
       ShiftId,
     });
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Locations");
 
     const result = await pool
@@ -1946,7 +1943,7 @@ const removeLocationShifts = async (req, res) => {
       return res.status(400).json({ message: "LocationId is required" });
     }
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Locations");
 
     // Kiểm tra LocationId có tồn tại không
@@ -2027,7 +2024,7 @@ const checkUsername = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Users");
 
     // Thực hiện truy vấn
@@ -2094,7 +2091,7 @@ const updateWorkSchedules = async (req, res) => {
       DaysOfWeek: formattedDaysOfWeek,
     });
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table WorkSchedules");
 
     const result = await pool
@@ -2129,7 +2126,7 @@ const updateWorkSchedules = async (req, res) => {
 };
 
 const getFilmFavourire = async (req, res) => {
-  console.log("sendFavourire");
+  console.log("getFilmFavourire");
 
   // Lấy userId từ req.params
   const userId = parseInt(req.params.userId);
@@ -2145,7 +2142,7 @@ const getFilmFavourire = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Đã kết nối database");
 
     // Thực hiện truy vấn để lấy dữ liệu từ bảng Favourite
@@ -2338,7 +2335,7 @@ const getActor = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connected to database successfully");
 
     // Thực hiện truy vấn để lấy thông tin diễn viên và movie ID
@@ -2393,7 +2390,7 @@ const updateSatusBuyTicketInfo = async (req, res) => {
         .json({ message: "BuyTicketId is missing in query" });
     }
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table BuyTicketInfo");
 
     const result = await pool
@@ -2431,7 +2428,7 @@ const checkInBuyTicket = async (req, res) => {
         .json({ message: "BuyTicketId is missing in query" });
     }
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table BuyTicketInfo");
 
     const result = await pool
@@ -2496,7 +2493,7 @@ const getTop5RateMovie = async (req, res) => {
   let pool;
   try {
     // Kết nối đến SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
 
     // Thực hiện truy vấn để lấy thông tin phim, đánh giá, thể loại, rạp chiếu, thời lượng và ngày khởi chiếu
     let result = await pool.request().query(`
@@ -2561,7 +2558,7 @@ const FindOneBuyTicketById = async (req, res) => {
         .json({ message: "BuyTicketId is missing in query" });
     }
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table BuyTicketInfo");
 
     const result = await pool
@@ -2593,7 +2590,7 @@ const deleteOneBuyTicketById = async (req, res) => {
     // Lấy BuyTicketId từ query string
     const { BuyTicketId } = req.query;
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table BuyTicketInfo");
 
     await pool
@@ -2630,7 +2627,7 @@ const insertRate = async (req, res) => {
     // Lấy dữ liệu từ request body
     const { UserId, MovieId, Content, Rating } = req.body;
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Rate");
 
     // Kiểm tra xem đã có bản ghi với MovieId và UserId hay chưa
@@ -2686,7 +2683,7 @@ const getOneRate = async (req, res) => {
     // Lấy dữ liệu từ request body
     const { UserId, MovieId } = req.body;
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Rate");
 
     // Thực hiện truy vấn để lấy thông tin đánh giá
@@ -2728,7 +2725,7 @@ const getAllRateInfoByMovieID = async (req, res) => {
     // Lấy dữ liệu từ request body
     const { MovieId } = req.body;
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Rate");
 
     // Thực hiện truy vấn để lấy thông tin đánh giá
@@ -2785,7 +2782,7 @@ const updateInfoUser = async (req, res) => {
     }
 
     // Kết nối SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Users");
 
     // Truy vấn để cập nhật thông tin người dùng
@@ -2849,7 +2846,7 @@ const changePassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
     // Kết nối SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Users");
 
     // Truy vấn để thay đổi mật khẩu người dùng
@@ -2903,7 +2900,7 @@ const changePasswordForEmail = async (req, res) => {
     }
 
     // Kết nối SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Đã kết nối với SQL Server Table Users");
 
     // Truy vấn để thay đổi mật khẩu dựa trên Email
@@ -2958,7 +2955,7 @@ const insertMovie = async (req, res) => {
       GenreIds,
     } = req.body;
 
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server");
 
     // Thực hiện truy vấn gọi thủ tục sp_InsertMovie
@@ -3019,7 +3016,7 @@ const insertShowTime = async (req, res) => {
       return res.status(400).json({ message: "Thiếu tham số StartDate, EndDate hoặc Showtimes!" });
     }
    
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server");
    
     // Thực hiện truy vấn gọi thủ tục sp_InsertShowtimeData
@@ -3067,7 +3064,7 @@ const getThongkeNguoiDungMoi = async (req, res) => {
       const endDateOnly = EndDate.split("T")[0];
 
       // Kết nối tới SQL Server
-      pool = await sql.connect(connection);
+      const pool = await poolPromise;
       console.log("Đang kết nối đến SQL Server");
 
       // Thực thi stored procedure với ngày định dạng YYYY-MM-DD
@@ -3120,7 +3117,7 @@ const getThongkeDoanhThu = async (req, res) => {
       const prevWeekEndDateStr = prevWeekEndDate.toISOString().split("T")[0];
 
       // Kết nối tới SQL Server
-      pool = await sql.connect(connection);
+      const pool = await poolPromise;
 
       // Thực thi stored procedure GetRevenueByDate với các tham số StartDate, EndDate, và Role
       const result = await pool
@@ -3151,7 +3148,7 @@ const getThongkeDoanhThu = async (req, res) => {
           `);
 
       // Gắn tổng tiền tuần trước vào kết quả
-      const response = {
+      const response = { 
           data: result.recordset,
           totalPreviousWeekRevenue: prevWeekResult.recordset[0].TotalPreviousWeekRevenue,
       };
@@ -3189,7 +3186,7 @@ const updateUserStatus = async (req, res) => {
     }
 
     // Kết nối SQL Server
-    pool = await sql.connect(connection);
+    const pool = await poolPromise;
     console.log("Connecting to SQL Server Table Users");
 
     // Truy vấn để cập nhật trạng thái người dùng
