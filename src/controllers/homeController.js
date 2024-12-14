@@ -990,38 +990,21 @@ const uploadImage = async (req, res) => {
     const fileName = `images/${Date.now()}_${file.originalname}`;
     const fileUpload = bucket.file(fileName);
 
-    const blobStream = fileUpload.createWriteStream({
+    await fileUpload.save(file.buffer, {
       metadata: {
-        contentType: file.mimetype,
+        contentType: file.mimetype
       },
+      public: true  // Cho phép truy cập công khai
     });
 
-    blobStream.on("error", (err) => {
-      console.error("Upload error:", err.message);
-      return res.status(500).json({ error: "Error uploading file." });
-    });
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 
-    blobStream.on("finish", async () => {
-      try {
-        // Không cần lấy downloadToken nữa
-        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${
-          bucket.name
-        }/o/${encodeURIComponent(fileName)}?alt=media`;
-
-        return res.status(200).json({ url: publicUrl });
-      } catch (error) {
-        console.error("Error generating public URL:", error.message);
-        return res.status(500).json({ error: "Error generating public URL." });
-      }
-    });
-
-    blobStream.end(file.buffer);
+    return res.status(200).json({ url: publicUrl });
   } catch (error) {
-    console.error("Controller error:", error.message);
-    return res.status(500).json({ error: "Error uploading file." });
+    console.error("Upload error:", error);
+    return res.status(500).json({ error: "Error uploading file" });
   }
-}; 
-
+};
 
 // ----------------- SOCKET IO -----------------------
 const getConversations = async (req, res) => {
