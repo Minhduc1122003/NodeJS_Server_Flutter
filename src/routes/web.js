@@ -75,6 +75,7 @@ const { getHomepage,
   insertAttendance,
   checkAttendance,
   checkOutAttendance,
+  updateUserRole,
 
  } = require('../controllers/homeController');
 const route = express.Router();
@@ -145,5 +146,6 @@ route.post('/updateUserStatus', updateUserStatus);
 route.post('/insertAttendance', insertAttendance);
 route.post('/checkAttendance', checkAttendance);
 route.post('/checkOutAttendance', checkOutAttendance);
+route.post('/updateUserRole', updateUserRole);
 
 module.exports=route;
