@@ -61,8 +61,21 @@ checkOutAttendance,
 } = require('../controllers/homeController');
 const express = require('express');
 const multer = require('multer');
-const storage = multer.memoryStorage();  
-const upload = multer({ storage: storage });  // Khởi tạo multer với cấu hình bộ nhớ
+const path = require('path');
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+  console.log(file.mimetype);  // In ra kiểu mime của file 
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type'), false);
+  }
+}
+
+});
 
 const route = express.Router();
 // khai báo route
@@ -133,5 +146,8 @@ route.post('/updateUserStatus', updateUserStatus);
 route.post('/insertAttendance', insertAttendance);
 route.post('/checkAttendance', checkAttendance);
 route.post('/checkOutAttendance', checkOutAttendance);
+route.post('/updateUserRole', updateUserRole);
+
+
 
 module.exports=route;

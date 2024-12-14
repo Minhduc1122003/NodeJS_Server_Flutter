@@ -37,12 +37,8 @@ const getHomepage = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối nếu pool đã được khởi tạo
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
+
 }; 
 
 // Hàm xử lý cho route POST /findByViewID
@@ -92,12 +88,7 @@ const findByViewID = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 
@@ -140,12 +131,7 @@ const findByViewIDUser = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 // Hàm gửi email
@@ -309,11 +295,7 @@ const createAccount = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 // hàm get dữ liệu user (admin)
@@ -348,12 +330,7 @@ const getAllUserData = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 // hàm sinh code random
@@ -420,12 +397,7 @@ GROUP BY
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối nếu pool đã được khởi tạo
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 // Hàm xử lý cho route GET /movies
@@ -485,12 +457,7 @@ GROUP BY
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối nếu pool đã được khởi tạo
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 const findByViewMovieID = async (req, res) => {
@@ -605,12 +572,7 @@ const findByViewMovieID = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 const addFavourire = async (req, res) => {
@@ -649,11 +611,7 @@ const addFavourire = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const removeFavourire = async (req, res) => {
@@ -697,12 +655,7 @@ const removeFavourire = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 // Hàm xử lý cho route GET /movies
@@ -752,11 +705,7 @@ ORDER BY
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getChair = async (req, res) => {
@@ -806,12 +755,7 @@ const getChair = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 const insertBuyTicket = async (req, res) => {
@@ -852,11 +796,7 @@ const insertBuyTicket = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi truy vấn:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 const insertAttendance = async (req, res) => {
   let pool;
@@ -910,11 +850,7 @@ const insertAttendance = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi truy vấn:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const checkAttendance = async (req, res) => {
@@ -960,11 +896,7 @@ WHERE
   } catch (error) {
     console.error("Lỗi khi truy vấn:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const checkOutAttendance = async (req, res) => {
@@ -1009,11 +941,7 @@ const checkOutAttendance = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi truy vấn:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 
@@ -1047,11 +975,7 @@ ORDER BY
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 const { bucket } = require("../config/firebaseConfig");  // Đảm bảo nhập đúng đối tượng bucket
 
@@ -1144,11 +1068,7 @@ const getConversations = async (req, res) => {
   } catch (err) {
     console.error("Failed to get conversations:", err);
     res.status(500).send("Server Error");
-  } finally {
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 const createFilm = async (req, res) => {
@@ -1188,11 +1108,7 @@ const createFilm = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
  
 const getUserListForAdmin = async (req, res) => {
@@ -1204,7 +1120,7 @@ const getUserListForAdmin = async (req, res) => {
     const pool = await poolPromise;
     console.log("Connecting to SQL Server Table getUserListForAdmin");
     const result = await pool.request().query(`
-      SELECT * FROM Users WHERE Role IN (0, 1)
+      SELECT * FROM Users WHERE Role IN (0, 1, 2)
     `);
 
     // Gửi dữ liệu theo định dạng JSON
@@ -1213,11 +1129,7 @@ const getUserListForAdmin = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi truy vấn nhân viên:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const createShifts = async (req, res) => { 
@@ -1285,11 +1197,7 @@ const createShifts = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi tạo ca làm:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const _formatTime = (time) => {
@@ -1363,11 +1271,7 @@ const createLocation = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi tạo vị trí:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const createWorkSchedules = async (req, res) => {
@@ -1427,11 +1331,7 @@ const createWorkSchedules = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi tạo lịch làm việc:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getAllListShift = async (req, res) => {
@@ -1452,11 +1352,7 @@ const getAllListShift = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getAllListLocation = async (req, res) => {
@@ -1494,11 +1390,7 @@ JOIN
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch chiếu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getAllWorkSchedulesByID = async (req, res) => {
@@ -1534,11 +1426,7 @@ const getAllWorkSchedulesByID = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch làm việc:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getShiftForAttendance = async (req, res) => {
@@ -1585,11 +1473,7 @@ const getShiftForAttendance = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi truy vấn lịch làm việc:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getAllIsCombo = async (req, res) => {
@@ -1629,13 +1513,7 @@ const getAllIsCombo = async (req, res) => {
       message: "Internal Server Error",
       error: error.message,
     });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close();
-      console.log("Database connection closed");
-    }
-  }
+  } 
 };
 
 const getAllIsNotCombo = async (req, res) => {
@@ -1674,13 +1552,8 @@ const getAllIsNotCombo = async (req, res) => {
       message: "Internal Server Error",
       error: error.message,
     });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close();
-      console.log("Database connection closed");
-    }
-  }
+  } 
+
 };
 
 const updateShifts = async (req, res) => {
@@ -1756,11 +1629,7 @@ const updateShifts = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi sửa ca làm:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const removeShifts = async (req, res) => {
@@ -1837,11 +1706,7 @@ const removeShifts = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi xóa ca làm:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const updateLocationShifts = async (req, res) => {
@@ -1910,11 +1775,7 @@ const updateLocationShifts = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi sửa vị trí:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const removeLocationShifts = async (req, res) => {
@@ -1991,11 +1852,7 @@ const removeLocationShifts = async (req, res) => {
       message: "Lỗi Server",
       error: error.message,
     });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const checkUsername = async (req, res) => {
@@ -2044,11 +1901,7 @@ const checkUsername = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi tìm username:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const updateWorkSchedules = async (req, res) => {
@@ -2110,11 +1963,7 @@ const updateWorkSchedules = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi sửa lịch làm việc:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getFilmFavourire = async (req, res) => {
@@ -2157,11 +2006,7 @@ const getFilmFavourire = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const createMomoPayment = async (req, res) => {
@@ -2358,13 +2203,7 @@ const getActor = async (req, res) => {
       message: "Internal Server Error",
       error: error.message,
     });
-  } finally {
-    // Đóng kết nối
-    if (pool) {
-      await pool.close();
-      console.log("Database connection closed");
-    }
-  }
+  } 
 };
 
 const updateSatusBuyTicketInfo = async (req, res) => {
@@ -2398,11 +2237,7 @@ const updateSatusBuyTicketInfo = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi sửa trạng thái:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const checkInBuyTicket = async (req, res) => {
@@ -2435,11 +2270,7 @@ WHERE BuyTicketId = @BuyTicketId;
   } catch (error) {
     console.error("Lỗi khi sửa trạng thái:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const findAllBuyTicketByUserId = async (req, res) => {
@@ -2527,12 +2358,7 @@ ORDER BY
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
-  } finally {
-    // Đóng kết nối nếu pool đã được khởi tạo
-    if (pool) {
-      await pool.close(); // Đóng pool
-    }
-  }
+  } 
 };
 
 const FindOneBuyTicketById = async (req, res) => {
@@ -2567,11 +2393,7 @@ const FindOneBuyTicketById = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi sửa trạng thái:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const deleteOneBuyTicketById = async (req, res) => {
@@ -2597,11 +2419,7 @@ const deleteOneBuyTicketById = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi xóa vé:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 
@@ -2655,11 +2473,7 @@ const insertRate = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi thực hiện insertRate:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getOneRate = async (req, res) => {
@@ -2697,11 +2511,7 @@ const getOneRate = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi thực hiện getRate:", error);
     res.status(500).json({ error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getAllRateInfoByMovieID = async (req, res) => {
@@ -2748,11 +2558,7 @@ const getAllRateInfoByMovieID = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi thực hiện getRate:", error);
     res.status(500).json({ error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const updateInfoUser = async (req, res) => {
@@ -2804,12 +2610,7 @@ const updateInfoUser = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi sửa thông tin người dùng:", error);
     res.status(500).json({ message: "Server error", error: error.message });
-  } finally {
-    // Đảm bảo đóng kết nối
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }  
 };
 
 
@@ -2862,12 +2663,9 @@ const changePassword = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi thay đổi mật khẩu:", error);
     res.status(500).json({ message: "Server error", error: error.message });
-  } finally {
-    // Đảm bảo đóng kết nối
-    if (pool) {
-      await pool.close();
-    }
-  }
+  } 
+
+
 };
 
  
@@ -2915,12 +2713,7 @@ const changePasswordForEmail = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi thay đổi mật khẩu:", error);
     res.status(500).json({ message: "Server error", error: error.message });
-  } finally {
-    // Đảm bảo đóng kết nối
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }  
 };
 
 
@@ -2984,11 +2777,7 @@ const insertMovie = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi chèn dữ liệu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const insertShowTime = async (req, res) => {
@@ -3031,11 +2820,7 @@ const insertShowTime = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi chèn dữ liệu:", error);
     res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  }   
 };
 
 const getThongkeNguoiDungMoi = async (req, res) => {
@@ -3073,11 +2858,7 @@ const getThongkeNguoiDungMoi = async (req, res) => {
   } catch (error) {
       console.error("Lỗi khi lấy dữ liệu thống kê doanh thu:", error);
       res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally {
-      if (pool) {
-          await pool.close();
-      }
-  }
+  } 
 };
 
 
@@ -3150,12 +2931,7 @@ const getThongkeDoanhThu = async (req, res) => {
   } catch (error) {
       console.error("Lỗi khi lấy dữ liệu thống kê doanh thu:", error);
       res.status(500).json({ message: "Lỗi Server", error: error.message });
-  } finally { 
-      // Đảm bảo đóng kết nối sau khi xử lý xong
-      if (pool) {
-          await pool.close();
-      } 
-  }
+  }  
 };
 
 
@@ -3201,13 +2977,60 @@ const updateUserStatus = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi cập nhật trạng thái người dùng:", error);
     res.status(500).json({ message: "Server error", error: error.message });
-  } finally {
-    // Đảm bảo đóng kết nối
-    if (pool) {
-      await pool.close();
-    }
   }
 };
+
+const updateUserRole = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận updateUserRole từ Flutter!");
+
+    // Kiểm tra request body
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
+    // Lấy dữ liệu từ request body
+    const { UserId, Role } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!UserId || Role === undefined) {
+      return res.status(400).json({ message: "UserId và Role là bắt buộc" });
+    }
+
+    // Kiểm tra Role phải nằm trong các giá trị 0, 1, 2
+    if (![0, 1, 2].includes(Role)) {
+      return res.status(400).json({ message: "Role phải là 0, 1, hoặc 2" });
+    }
+
+    // Kết nối SQL Server
+    pool = await poolPromise;
+    console.log("Connecting to SQL Server Table Users");
+
+    // Truy vấn để cập nhật role người dùng
+    const result = await pool.request()
+      .input('UserId', sql.Int, UserId) // Gán UserId
+      .input('Role', sql.Int, Role)    // Gán Role với kiểu INT
+      .query(`
+        UPDATE Users
+        SET Role = @Role
+        WHERE UserId = @UserId
+      `);
+
+    // Kiểm tra kết quả
+    if (result.rowsAffected[0] > 0) {
+      res.status(200).json({ message: "User role updated successfully" });
+      console.log("Vai trò người dùng đã được cập nhật thành công:", result);
+    } else {
+      res.status(404).json({ message: "User not found or no changes made" });
+    }
+  } catch (error) {
+    console.error("Lỗi khi cập nhật vai trò người dùng:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
 
 
 
@@ -3274,4 +3097,5 @@ module.exports = {
   insertAttendance,
   checkAttendance,
   checkOutAttendance,
+  updateUserRole,
 };
