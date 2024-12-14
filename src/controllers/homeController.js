@@ -1053,57 +1053,49 @@ ORDER BY
     }
   }
 };
-const bucket = require("../config/firebaseConfig");
+const { bucket } = require("../config/firebaseConfig");  // Đảm bảo nhập đúng đối tượng bucket
 
+// Hàm tải lên hình ảnh
 const uploadImage = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded');
+  }
+
   try {
-    const file = req.file;
+    const fileName = `${Date.now()}-${req.file.originalname}`;
+    const blob = bucket.file(fileName);  // Lấy đối tượng file từ bucket
 
-    if (!file) {
-      return res.status(400).json({ error: "No file uploaded." });
-    }
-
-    const fileName = `images/${Date.now()}_${file.originalname}`;
-    const fileUpload = bucket.file(fileName);
-
-    const blobStream = fileUpload.createWriteStream({
+    const blobStream = blob.createWriteStream({
       metadata: {
-        contentType: file.mimetype,
+        contentType: req.file.mimetype,
       },
     });
 
-    blobStream.on("error", (err) => {
-      console.error("Upload error:", err.message);
-      return res.status(500).json({ error: "Error uploading file." });
+    blobStream.on('finish', () => {
+      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
+      res.status(200).send({ imageUrl: publicUrl });
     });
 
-    blobStream.on("finish", async () => {
-      try {
-        // Không cần lấy downloadToken nữa
-        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${
-          bucket.name
-        }/o/${encodeURIComponent(fileName)}?alt=media`;
-
-        return res.status(200).json({ url: publicUrl });
-      } catch (error) {
-        console.error("Error generating public URL:", error.message);
-        return res.status(500).json({ error: "Error generating public URL." });
-      }
+    blobStream.on('error', (err) => {
+      console.error('Error uploading file:', err);
+      res.status(500).send('Có lỗi trong quá trình tải lên');
     });
 
-    blobStream.end(file.buffer);
+    blobStream.end(req.file.buffer);
+
   } catch (error) {
-    console.error("Controller error:", error.message);
-    return res.status(500).json({ error: "Error uploading file." });
+    console.error('Error uploading file:', error);
+    res.status(500).send('Có lỗi trong quá trình tải lên');
   }
-}; 
+};
+
 
 
 // ----------------- SOCKET IO -----------------------
 const getConversations = async (req, res) => {
   const { userId } = req.body; // Lấy userId từ body của request
 
-  // Kiểm tra giá trị userId
+  // Kiểm tra giá trị userId 
   if (typeof userId !== "number") {
     return res.status(400).send("Invalid user ID");
   }

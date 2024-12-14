@@ -1,84 +1,73 @@
+const { getHomepage, 
+  findByViewID,
+  sendEmail,
+  createAccount,
+  getConversations,
+  getMoviesDangChieu,
+  getMoviesSapChieu, 
+  getUserListForAdmin,
+  findByViewMovieID,
+  addFavourire,
+  removeFavourire,
+  getAllUserData,
+  getShowtime,
+  getChair,
+  insertBuyTicket,
+  getShowtimeListForAdmin,
+  uploadImage,
+  createFilm,
+  createShifts,
+  getAllListShift,
+getAllListLocation,
+createLocation,
+createWorkSchedules,
+getAllWorkSchedulesByID,
+getShiftForAttendance,
+getAllIsCombo,
+getAllIsNotCombo,
+updateShifts,
+removeShifts,
+updateLocationShifts,
+removeLocationShifts,
+checkUsername,
+updateWorkSchedules,
+getFilmFavourire,
+findByViewIDUser,
+createMomoPayment, 
+momoCallback,
+checkTransactionStatus,
+getActor,
+updateSatusBuyTicketInfo,
+findAllBuyTicketByUserId,
+getTop5RateMovie,
+FindOneBuyTicketById,
+insertRate,
+getOneRate,
+getAllRateInfoByMovieID,
+checkInBuyTicket,
+updateInfoUser,
+changePassword,
+changePasswordForEmail,
+insertMovie,
+insertShowTime,
+getThongkeNguoiDungMoi,
+getThongkeDoanhThu,
+deleteOneBuyTicketById,
+updateUserStatus,
+insertAttendance,
+checkAttendance,
+checkOutAttendance,
+
+} = require('../controllers/homeController');
 const express = require('express');
 const multer = require('multer');
+const storage = multer.memoryStorage();  
+const upload = multer({ storage: storage });  // Khởi tạo multer với cấu hình bộ nhớ
 
-const path = require('path');
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-  console.log(file.mimetype);  // In ra kiểu mime của file 
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type'), false);
-  }
-}
-
-});
-const { getHomepage, 
-    findByViewID,
-    sendEmail,
-    createAccount,
-    getConversations,
-    getMoviesDangChieu,
-    getMoviesSapChieu, 
-    getUserListForAdmin,
-    findByViewMovieID,
-    addFavourire,
-    removeFavourire,
-    getAllUserData,
-    getShowtime,
-    getChair,
-    insertBuyTicket,
-    getShowtimeListForAdmin,
-    uploadImage,
-    createFilm,
-    createShifts,
-    getAllListShift,
-  getAllListLocation,
-  createLocation,
-  createWorkSchedules,
-  getAllWorkSchedulesByID,
-  getShiftForAttendance,
-  getAllIsCombo,
-  getAllIsNotCombo,
-  updateShifts,
-  removeShifts,
-  updateLocationShifts,
-  removeLocationShifts,
-  checkUsername,
-  updateWorkSchedules,
-  getFilmFavourire,
-  findByViewIDUser,
-  createMomoPayment, 
-  momoCallback,
-  checkTransactionStatus,
-  getActor,
-  updateSatusBuyTicketInfo,
-  findAllBuyTicketByUserId,
-  getTop5RateMovie,
-  FindOneBuyTicketById,
-  insertRate,
-  getOneRate,
-  getAllRateInfoByMovieID,
-  checkInBuyTicket,
-  updateInfoUser,
-  changePassword,
-  changePasswordForEmail,
-  insertMovie,
-  insertShowTime,
-  getThongkeNguoiDungMoi,
-  getThongkeDoanhThu,
-  deleteOneBuyTicketById,
-  updateUserStatus,
-  insertAttendance,
-  checkAttendance,
-  checkOutAttendance,
-
- } = require('../controllers/homeController');
 const route = express.Router();
 // khai báo route
+route.post('/uploadImage', upload.single('file'), uploadImage);
+
 route.get('/', getHomepage);
 route.get('/getMoviesDangChieu', getMoviesDangChieu); // get danh sách nhắn tin
 route.get('/getMoviesSapChieu', getMoviesSapChieu); // get danh sách nhắn tin
@@ -114,7 +103,6 @@ route.post('/getAllUserData', getAllUserData); // thêm yêu thích
 route.post('/getShowtime', getShowtime); // thêm yêu thích
 route.post('/getChair', getChair); // lấy list ghế
 route.post('/insertBuyTicket', insertBuyTicket); // lấy list ghế
-route.post('/uploadImage', upload.single('image'), uploadImage);
 route.post('/createFilm', createFilm); // Thêm film
 route.post('/createShifts', createShifts); // Thêm film
 route.post('/createLocation', createLocation); // Thêm film
