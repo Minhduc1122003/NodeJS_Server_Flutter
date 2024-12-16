@@ -467,7 +467,6 @@ const findByViewMovieID = async (req, res) => {
   if (!req.body) {
     return res.status(400).json({ message: "Request body is missing" });
   }
-
   const movieId = parseInt(req.body.movieId, 10);
   const userId = parseInt(req.body.userId, 10);
   console.log("Đã nhận MovieID và UserID từ Flutter!");
@@ -3031,6 +3030,56 @@ const updateUserRole = async (req, res) => {
 };
 
 
+// const checkEmail = async (req, res) => {
+//   let pool;
+//   try {
+//     console.log("Đã nhận checkUsername Flutter!");
+
+//     // Kiểm tra nếu body của request không tồn tại
+//     if (!req.body) {
+//       return res.status(400).json({ message: "Request body is missing" });
+//     }
+
+//     // Lấy dữ liệu từ request body
+//     const { UserName } = req.body;
+
+//     // Kiểm tra các trường bắt buộc
+//     if (!UserName) {
+//       return res.status(400).json({ message: "Missing required fields" });
+//     }
+
+//     const pool = await poolPromise;
+//     console.log("Connecting to SQL Server Table Users");
+
+//     // Thực hiện truy vấn
+//     const result = await pool.request().input("UserName", sql.VarChar, UserName)
+//       .query(`
+//         SELECT UserName 
+//         FROM Users 
+//         WHERE UserName = @UserName
+//       `);
+
+//     // Kiểm tra kết quả trả về từ truy vấn
+//     if (result.recordset.length > 0) {
+//       // Nếu UserName tồn tại
+//       res
+//         .status(200)
+//         .json({
+//           message: "UserName found",
+//           userName: result.recordset[0].UserName,
+//         });
+//     } else {
+//       // Nếu UserName không tồn tại
+//       res.status(404).json({ message: "UserName not found" });
+//       console.log("Không tìm thấy username:", UserName);
+//     }
+//   } catch (error) {
+//     console.error("Lỗi khi tìm username:", error);
+//     res.status(500).json({ message: "Lỗi Server", error: error.message });
+//   }   
+// };
+
+
 
 
 
@@ -3039,16 +3088,8 @@ const updateUserRole = async (req, res) => {
 
 module.exports = {
   getHomepage,
-  findByViewID,
-  sendEmail, // Xuất hàm sendEmail
-  createAccount,
   getConversations,
-  getMoviesDangChieu,
-  getMoviesSapChieu,
-  findByViewMovieID,
-  addFavourire,
-  removeFavourire,
-  getAllUserData,
+   getAllUserData,
   getShowtime,
   getChair,
   insertBuyTicket,
@@ -3069,24 +3110,19 @@ module.exports = {
   removeShifts,
   updateLocationShifts,
   removeLocationShifts,
-  checkUsername,
   updateWorkSchedules,
-  findByViewIDUser,
-  getFilmFavourire,
-  createMomoPayment,
+ createMomoPayment,
   momoCallback,
   checkTransactionStatus,
-  getActor,
+ 
   updateSatusBuyTicketInfo,
   findAllBuyTicketByUserId,
-  getTop5RateMovie,
   FindOneBuyTicketById,
   insertRate,
   getOneRate,
   getAllRateInfoByMovieID,
   checkInBuyTicket, 
   updateInfoUser,
-  changePassword,
   changePasswordForEmail,
   insertMovie,
   insertShowTime,
@@ -3098,4 +3134,21 @@ module.exports = {
   checkAttendance,
   checkOutAttendance,
   updateUserRole,
+
+
+  //===============================NHiiiiii
+  sendEmail, // Xuất hàm sendEmail
+  createAccount,
+  getMoviesDangChieu,
+  getMoviesSapChieu,
+  findByViewMovieID,
+  addFavourire,
+  removeFavourire,
+  checkUsername,
+  findByViewID,
+  getTop5RateMovie,
+  changePassword,
+  findByViewIDUser,
+  getFilmFavourire,
+  getActor,
 };

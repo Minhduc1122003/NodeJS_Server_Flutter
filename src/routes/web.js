@@ -57,6 +57,7 @@ updateUserStatus,
 insertAttendance,
 checkAttendance,
 checkOutAttendance,
+updateUserRole,
 
 } = require('../controllers/homeController');
 const express = require('express');
