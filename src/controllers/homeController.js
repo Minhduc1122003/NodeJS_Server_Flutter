@@ -976,43 +976,34 @@ ORDER BY
     res.status(500).json({ message: "Lỗi Server", error: error.message });
   }   
 };
-const { bucket } = require("../config/firebaseConfig");  // Đảm bảo nhập đúng đối tượng bucket
+const bucket = require("../config/firebaseConfig");
 
-// Hàm tải lên hình ảnh
 const uploadImage = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).send('No file uploaded');
-  }
-
   try {
-    const fileName = `${Date.now()}-${req.file.originalname}`;
-    const blob = bucket.file(fileName);  // Lấy đối tượng file từ bucket
+    const file = req.file;
 
-    const blobStream = blob.createWriteStream({
+    if (!file) {
+      return res.status(400).json({ error: "No file uploaded." });
+    }
+
+    const fileName = `images/${Date.now()}_${file.originalname}`;
+    const fileUpload = bucket.file(fileName);
+
+    await fileUpload.save(file.buffer, {
       metadata: {
-        contentType: req.file.mimetype,
+        contentType: file.mimetype
       },
+      public: true  // Cho phép truy cập công khai
     });
 
-    blobStream.on('finish', () => {
-      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
-      res.status(200).send({ imageUrl: publicUrl });
-    });
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 
-    blobStream.on('error', (err) => {
-      console.error('Error uploading file:', err);
-      res.status(500).send('Có lỗi trong quá trình tải lên');
-    });
-
-    blobStream.end(req.file.buffer);
-
+    return res.status(200).json({ url: publicUrl });
   } catch (error) {
-    console.error('Error uploading file:', error);
-    res.status(500).send('Có lỗi trong quá trình tải lên');
+    console.error("Upload error:", error);
+    return res.status(500).json({ error: "Error uploading file" });
   }
 };
-
-
 
 // ----------------- SOCKET IO -----------------------
 const getConversations = async (req, res) => {
@@ -3091,7 +3082,7 @@ module.exports = {
   getConversations,
    getAllUserData,
   getShowtime,
-  getChair,
+  getChair, 
   insertBuyTicket,
   getShowtimeListForAdmin,
   uploadImage,
@@ -3114,7 +3105,7 @@ module.exports = {
  createMomoPayment,
   momoCallback,
   checkTransactionStatus,
- 
+
   updateSatusBuyTicketInfo,
   findAllBuyTicketByUserId,
   FindOneBuyTicketById,

@@ -1,15 +1,30 @@
+require('dotenv').config();
 const admin = require('firebase-admin');
-const path = require('path');
 
-// Đảm bảo bạn cung cấp đúng đường dẫn tới tệp JSON của tài khoản dịch vụ Firebase
-const serviceAccount = path.join(__dirname, 'movieticket-77cf5-0ca8a30e8f80.json');
+try {
+  const serviceAccount = {
+    type: process.env.FIREBASE_TYPE,
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    client_id: process.env.FIREBASE_CLIENT_ID,
+    auth_uri: process.env.FIREBASE_AUTH_URI,
+    token_uri: process.env.FIREBASE_TOKEN_URI,
+    auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+    client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL
+  };
 
-// Khởi tạo Firebase Admin SDK với chứng thực từ tệp JSON
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: 'gs://movieticket-77cf5.appspot.com',  // Đảm bảo tên bucket chính xác
-});
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: `gs://${serviceAccount.project_id}.appspot.com`
+  });
+
+  console.log('Firebase Admin SDK đã được khởi tạo.');
+} catch (error) {
+  console.error('Lỗi khởi tạo Firebase:', error.message);
+  process.exit(1);
+}
 
 const bucket = admin.storage().bucket();
-
-module.exports = { bucket };  // Xuất đối tượng bucket
+module.exports = bucket;
