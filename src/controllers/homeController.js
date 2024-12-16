@@ -3080,7 +3080,7 @@ const updateUserRole = async (req, res) => {
 module.exports = {
   getHomepage,
   getConversations,
-   getAllUserData,
+  getAllUserData,
   getShowtime,
   getChair, 
   insertBuyTicket,
@@ -3102,10 +3102,9 @@ module.exports = {
   updateLocationShifts,
   removeLocationShifts,
   updateWorkSchedules,
- createMomoPayment,
+  createMomoPayment,
   momoCallback,
   checkTransactionStatus,
-
   updateSatusBuyTicketInfo,
   findAllBuyTicketByUserId,
   FindOneBuyTicketById,
