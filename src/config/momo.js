@@ -5,7 +5,6 @@ module.exports = {
     MOMO_SECRET_KEY: "K951B6PE1waDMi640xX08PD3vg6EkVlz",
     MOMO_ENDPOINT: "https://test-payment.momo.vn/v2/gateway/api/create",
     REDIRECT_URL: "https://nodejs-sql-server-api.onrender.com/momo-callback",
-    REDIRECT_URL: "http://192.168.10.92/momo-callback",
     IPN_URL: "https://callback.url/notify", 
     REQUEST_TYPE: "payWithMethod",
     MOMO_STATUS_ENDPOINT:"https://test-payment.momo.vn/v2/gateway/api/query",
