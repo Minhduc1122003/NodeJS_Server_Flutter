@@ -879,7 +879,7 @@ FROM
 JOIN 
     Shifts S ON A.ShiftId = S.ShiftId
 WHERE 
-    A.UserId = 2 
+    A.UserId = @UserId
     AND A.Status = N'Chưa ra ca'`
       );
 
