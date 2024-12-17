@@ -58,7 +58,7 @@ insertAttendance,
 checkAttendance,
 checkOutAttendance,
 updateUserRole,
-
+checkEmail,
 } = require('../controllers/homeController');
 const express = require('express');
 const multer = require('multer');
@@ -148,6 +148,7 @@ route.post('/insertAttendance', insertAttendance);
 route.post('/checkAttendance', checkAttendance);
 route.post('/checkOutAttendance', checkOutAttendance);
 route.post('/updateUserRole', updateUserRole);
+route.post('/checkEmail', checkEmail);
 
 
 

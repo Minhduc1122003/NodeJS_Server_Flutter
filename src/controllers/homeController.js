@@ -3021,54 +3021,54 @@ const updateUserRole = async (req, res) => {
 };
 
 
-// const checkEmail = async (req, res) => {
-//   let pool;
-//   try {
-//     console.log("Đã nhận checkUsername Flutter!");
+const checkEmail = async (req, res) => {
+  let pool;
+  try {
+    console.log("Đã nhận checkEmail Flutter!");
 
-//     // Kiểm tra nếu body của request không tồn tại
-//     if (!req.body) {
-//       return res.status(400).json({ message: "Request body is missing" });
-//     }
+    // Kiểm tra nếu body của request không tồn tại
+    if (!req.body) {
+      return res.status(400).json({ message: "Request body is missing" });
+    }
 
-//     // Lấy dữ liệu từ request body
-//     const { UserName } = req.body;
+    // Lấy dữ liệu từ request body
+    const { Email } = req.body;
 
-//     // Kiểm tra các trường bắt buộc
-//     if (!UserName) {
-//       return res.status(400).json({ message: "Missing required fields" });
-//     }
+    // Kiểm tra các trường bắt buộc
+    if (!Email) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
-//     const pool = await poolPromise;
-//     console.log("Connecting to SQL Server Table Users");
+    const pool = await poolPromise;
+    console.log("Connecting to SQL Server Table Users");
 
-//     // Thực hiện truy vấn
-//     const result = await pool.request().input("UserName", sql.VarChar, UserName)
-//       .query(`
-//         SELECT UserName 
-//         FROM Users 
-//         WHERE UserName = @UserName
-//       `);
+    // Thực hiện truy vấn
+    const result = await pool.request().input("Email", sql.VarChar, Email)
+      .query(`
+        SELECT Email 
+        FROM Users 
+        WHERE Email = @Email
+      `);
 
-//     // Kiểm tra kết quả trả về từ truy vấn
-//     if (result.recordset.length > 0) {
-//       // Nếu UserName tồn tại
-//       res
-//         .status(200)
-//         .json({
-//           message: "UserName found",
-//           userName: result.recordset[0].UserName,
-//         });
-//     } else {
-//       // Nếu UserName không tồn tại
-//       res.status(404).json({ message: "UserName not found" });
-//       console.log("Không tìm thấy username:", UserName);
-//     }
-//   } catch (error) {
-//     console.error("Lỗi khi tìm username:", error);
-//     res.status(500).json({ message: "Lỗi Server", error: error.message });
-//   }   
-// };
+    // Kiểm tra kết quả trả về từ truy vấn
+    if (result.recordset.length > 0) {
+      // Nếu Email tồn tại
+      res
+        .status(200)
+        .json({
+          message: "Email found",
+          email: result.recordset[0].Email,
+        });
+    } else {
+      // Nếu Email không tồn tại
+      res.status(404).json({ message: "Email not found" });
+      console.log("Không tìm thấy email:", Email);
+    }
+  } catch (error) {
+    console.error("Lỗi khi tìm email:", error);
+    res.status(500).json({ message: "Lỗi Server", error: error.message });
+  }   
+};
 
 
 
@@ -3081,9 +3081,7 @@ module.exports = {
   getHomepage,
   getConversations,
   getAllUserData,
-  getShowtime,
-  getChair, 
-  insertBuyTicket,
+  
   getShowtimeListForAdmin,
   uploadImage,
   createFilm,
@@ -3095,21 +3093,17 @@ module.exports = {
   createWorkSchedules,
   getAllWorkSchedulesByID,
   getShiftForAttendance,
-  getAllIsCombo,
-  getAllIsNotCombo,
   updateShifts,
   removeShifts,
   updateLocationShifts,
   removeLocationShifts,
   updateWorkSchedules,
-  createMomoPayment,
+  
   momoCallback,
-  checkTransactionStatus,
-  updateSatusBuyTicketInfo,
-  findAllBuyTicketByUserId,
-  FindOneBuyTicketById,
-  insertRate,
-  getOneRate,
+  
+  
+  checkEmail,
+  
   getAllRateInfoByMovieID,
   checkInBuyTicket, 
   updateInfoUser,
@@ -3118,12 +3112,34 @@ module.exports = {
   insertShowTime,
   getThongkeNguoiDungMoi,
   getThongkeDoanhThu,
-  deleteOneBuyTicketById,
+  
   updateUserStatus,
   insertAttendance,
+  
+  updateUserRole,
+// -----------------------------
+  getShowtime, 
+  getChair,
+  getAllIsCombo,  
+  getAllIsNotCombo,
+  insertBuyTicket, 
+  createMomoPayment,
+  updateSatusBuyTicketInfo,
+  deleteOneBuyTicketById,
+  checkTransactionStatus,
+
+  insertRate,
+  getOneRate,
+
+  findAllBuyTicketByUserId,
+  FindOneBuyTicketById,
+
   checkAttendance,
   checkOutAttendance,
-  updateUserRole,
+
+
+
+
 
 
   //===============================NHiiiiii
@@ -3141,4 +3157,5 @@ module.exports = {
   findByViewIDUser,
   getFilmFavourire,
   getActor,
+
 };
